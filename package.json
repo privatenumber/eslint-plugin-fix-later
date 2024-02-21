@@ -1,0 +1,53 @@
+{
+	"name": "eslint-plugin-fix-later",
+	"version": "0.0.0-semantic-release",
+	"description": "ESLint plugin to suppresses ESLint errors as warnings for future resolution",
+	"keywords": [
+		"eslint",
+		"plugin",
+		"fix",
+		"later",
+		"suppress",
+		"errors",
+		"warnings"
+	],
+	"license": "MIT",
+	"repository": "privatenumber/eslint-plugin-fix-later",
+	"author": {
+		"name": "Hiroki Osame",
+		"email": "hiroki.osame@gmail.com"
+	},
+	"files": [
+		"dist"
+	],
+	"main": "./dist/index.cjs",
+	"exports": "./dist/index.cjs",
+	"scripts": {
+		"test": "tsx tests",
+		"dev": "tsx watch tests",
+		"build": "pkgroll",
+		"lint": "lint . --ignore-pattern README.md",
+		"prepack": "pnpm build && clean-pkg-json"
+	},
+	"peerDependencies": {
+		"eslint": "^7.0.0"
+	},
+	"devDependencies": {
+		"@pvtnbr/eslint-config": "^1.0.3",
+		"@types/eslint": "^8.56.2",
+		"@types/node": "^20.11.19",
+		"clean-pkg-json": "^1.2.0",
+		"dot-prop": "^8.0.2",
+		"eslint": "^8.56.0",
+		"execa": "^8.0.1",
+		"fs-fixture": "^1.2.0",
+		"manten": "^1.2.0",
+		"outdent": "^0.8.0",
+		"pkgroll": "^2.0.1",
+		"tsx": "^4.7.1",
+		"typescript": "^5.3.3"
+	},
+	"eslintConfig": {
+		"extends": "@pvtnbr/eslint-config"
+	}
+}
