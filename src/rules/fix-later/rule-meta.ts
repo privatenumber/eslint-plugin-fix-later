@@ -40,10 +40,10 @@ export const normalizeOptions = (
 // Might not work if the rule name is changed via flat config
 // So this is updated by `setRuleUsage` below in case it is
 
-// eslint-disable-next-line import/no-mutable-exports
+// eslint-disable-next-line import-x/no-mutable-exports
 export let ruleId = `${name.slice('eslint-config-'.length)}/fix-later`;
 
-// eslint-disable-next-line import/no-mutable-exports
+// eslint-disable-next-line import-x/no-mutable-exports
 export let ruleOptions: RuleOptions | undefined;
 
 export const setRuleUsage = (
