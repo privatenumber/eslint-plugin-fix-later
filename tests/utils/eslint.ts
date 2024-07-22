@@ -1,8 +1,8 @@
-import path from 'path';
-import fs from 'fs/promises';
 import { execa } from 'execa';
-import type { ESLint } from 'eslint';
+import type { ESLint, Linter } from 'eslint';
 import { name } from '../../package.json';
+import { installSelfPackage } from './install-self-package.js';
+import { createEslintConfig } from './create-eslint-config.js';
 
 type StdIn = {
 	name?: string;
@@ -10,7 +10,7 @@ type StdIn = {
 };
 
 type Options = {
-	ruleConfig: Record<string, unknown>;
+	config: Linter.Config;
 	code: string | StdIn;
 	cwd?: string;
 	fix?: boolean;
@@ -19,33 +19,25 @@ type Options = {
 export const eslint = async (
 	{
 		cwd = process.cwd(),
-		ruleConfig,
+		config: configRaw,
 		code,
 		fix,
 	}: Options,
 ) => {
-	const packageInstallPath = path.resolve(cwd, 'node_modules', name);
-	const packageInstalled = await fs.lstat(packageInstallPath).then(() => true, () => false);
-	if (!packageInstalled) {
-		await fs.mkdir(path.dirname(packageInstallPath), { recursive: true });
-		try {
-			await fs.symlink(
-				process.cwd(),
-				packageInstallPath,
-			);
-		} catch {}
-	}
+	await installSelfPackage(cwd);
 
-	const rules = Object.entries(ruleConfig)
-		.flatMap(
-			(([ruleName, config]) => ['--rule', `${ruleName}:${JSON.stringify(config)}`]),
-		);
+	await using config = await createEslintConfig({
+		root: true,
+		plugins: [
+			name,
+		],
+		...configRaw,
+	});
 
 	const eslintArgs = [
+		'-c',
+		config.path,
 		'--no-eslintrc',
-		'--plugin',
-		name,
-		...rules,
 		'--format=json',
 	];
 

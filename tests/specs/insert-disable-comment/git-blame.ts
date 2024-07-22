@@ -14,11 +14,13 @@ export default testSuite(({ describe }) => {
 		await test('No git project', async () => {
 			await expect(
 				() => eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'console.log()',
@@ -39,11 +41,13 @@ export default testSuite(({ describe }) => {
 		await test('Unchecked file', async () => {
 			await expect(
 				() => eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: 'file.js',
 					cwd: fixture.path,
@@ -57,11 +61,13 @@ export default testSuite(({ describe }) => {
 
 		await test('Uncommitted file - gets current git user', async () => {
 			const result = await eslint({
-				ruleConfig: {
-					'fix-later/fix-later': ['warn', {
-						commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
-					}],
-					'no-console': 'error',
+				config: {
+					rules: {
+						'fix-later/fix-later': ['warn', {
+							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
+						}],
+						'no-console': 'error',
+					},
 				},
 				code: 'file.js',
 				cwd: fixture.path,
@@ -81,11 +87,13 @@ export default testSuite(({ describe }) => {
 
 		await test('Committed file', async () => {
 			const result = await eslint({
-				ruleConfig: {
-					'fix-later/fix-later': ['warn', {
-						commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
-					}],
-					'no-console': 'error',
+				config: {
+					rules: {
+						'fix-later/fix-later': ['warn', {
+							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
+						}],
+						'no-console': 'error',
+					},
 				},
 				code: 'file.js',
 				cwd: fixture.path,

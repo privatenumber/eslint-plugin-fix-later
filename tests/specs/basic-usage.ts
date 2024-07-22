@@ -5,9 +5,11 @@ export default testSuite(({ describe }) => {
 	describe('basic usage', async ({ describe, test }) => {
 		test('off', async () => {
 			const result = await eslint({
-				ruleConfig: {
-					'fix-later/fix-later': 'off',
-					'no-console': 'error',
+				config: {
+					rules: {
+						'fix-later/fix-later': 'off',
+						'no-console': 'error',
+					},
 				},
 				code: {
 					content: 'console.log()',
@@ -22,9 +24,11 @@ export default testSuite(({ describe }) => {
 
 		test('ignores auto-fixable rules & no options', async () => {
 			const result = await eslint({
-				ruleConfig: {
-					'fix-later/fix-later': 'error',
-					semi: ['error', 'never'],
+				config: {
+					rules: {
+						'fix-later/fix-later': 'error',
+						semi: ['error', 'never'],
+					},
 				},
 				code: {
 					content: '1;',
@@ -40,9 +44,11 @@ export default testSuite(({ describe }) => {
 		describe('inherits severity', ({ test }) => {
 			test('"warning"', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': 'warn',
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': 'warn',
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'console.log()',
@@ -77,9 +83,11 @@ export default testSuite(({ describe }) => {
 
 			test('1', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': 1,
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': 1,
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'console.log()',
@@ -115,10 +123,12 @@ export default testSuite(({ describe }) => {
 
 		test('handles multiple rules', async () => {
 			const result = await eslint({
-				ruleConfig: {
-					'fix-later/fix-later': 'warn',
-					'no-console': 'error',
-					'no-undef': 'error',
+				config: {
+					rules: {
+						'fix-later/fix-later': 'warn',
+						'no-console': 'error',
+						'no-undef': 'error',
+					},
 				},
 				code: {
 					content: 'asdf(console.log())',
@@ -192,9 +202,11 @@ export default testSuite(({ describe }) => {
 		describe('includeWarnings', ({ test }) => {
 			test('false', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['warn'],
-						'no-console': 'warn',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['warn'],
+							'no-console': 'warn',
+						},
 					},
 					code: {
 						content: 'console.log()',
@@ -210,11 +222,13 @@ export default testSuite(({ describe }) => {
 
 			test('true', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['warn', {
-							includeWarnings: true,
-						}],
-						'no-console': 'warn',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['warn', {
+								includeWarnings: true,
+							}],
+							'no-console': 'warn',
+						},
 					},
 					code: {
 						content: 'console.log()',

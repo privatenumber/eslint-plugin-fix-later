@@ -7,11 +7,13 @@ export default testSuite(({ describe }) => {
 		describe('end-of-line', ({ test }) => {
 			test('added to complex line', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['warn', {
-							insertDisableComment: 'end-of-line',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['warn', {
+								insertDisableComment: 'end-of-line',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: outdent`
@@ -36,11 +38,13 @@ export default testSuite(({ describe }) => {
 
 			test('added to even more complex line', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							insertDisableComment: 'end-of-line',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								insertDisableComment: 'end-of-line',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'asdf(1,console.log())',
@@ -59,11 +63,13 @@ export default testSuite(({ describe }) => {
 		describe('above-line', ({ test }) => {
 			test('simple code', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							insertDisableComment: 'above-line',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								insertDisableComment: 'above-line',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'console.log()',
@@ -83,11 +89,13 @@ export default testSuite(({ describe }) => {
 
 			test('complex code', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							insertDisableComment: 'above-line',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								insertDisableComment: 'above-line',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: outdent`
@@ -113,11 +121,13 @@ export default testSuite(({ describe }) => {
 
 			test('condensed code', async () => {
 				const result = await eslint({
-					ruleConfig: {
-						'fix-later/fix-later': ['error', {
-							insertDisableComment: 'above-line',
-						}],
-						'no-console': 'error',
+					config: {
+						rules: {
+							'fix-later/fix-later': ['error', {
+								insertDisableComment: 'above-line',
+							}],
+							'no-console': 'error',
+						},
 					},
 					code: {
 						content: 'asdf(1,console.log())',
