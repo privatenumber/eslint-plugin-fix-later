@@ -1,3 +1,4 @@
+import path from 'path';
 import { execaNode } from 'execa';
 import type { ESLint, Linter } from 'eslint';
 import { name } from '../../package.json';
@@ -17,7 +18,7 @@ type Options = {
 };
 
 export const eslint = async (
-	eslintBinaryPath: string,
+	eslintName: string,
 	{
 		cwd = process.cwd(),
 		config: configRaw,
@@ -57,13 +58,14 @@ export const eslint = async (
 	}
 
 	const eslintProcess = execaNode(
-		eslintBinaryPath,
+		path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
 		eslintArgs,
 		{
 			cwd,
 			all: true,
 			stdio: 'pipe',
 			reject: false,
+			nodeOptions: ['--import', 'alias-imports', '-C', eslintName]
 		},
 	);
 

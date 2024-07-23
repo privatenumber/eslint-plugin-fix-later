@@ -31,12 +31,23 @@
 		"type-check": "tsc",
 		"prepack": "pnpm build && clean-pkg-json"
 	},
+	"imports": {
+		"eslint": {
+			"eslint7": "eslint7",
+			"eslint8": "eslint8"
+		},
+		"eslint/*": {
+			"eslint7": "eslint7/*",
+			"eslint8": "eslint8/*"
+		}
+	},
 	"peerDependencies": {
 		"eslint": "^7.0.0"
 	},
 	"devDependencies": {
 		"@types/eslint": "^8.56.10",
 		"@types/node": "^20.14.11",
+		"alias-imports": "^1.1.0",
 		"clean-pkg-json": "^1.2.0",
 		"dot-prop": "^8.0.2",
 		"eslint7": "npm:eslint@7.0.0",
