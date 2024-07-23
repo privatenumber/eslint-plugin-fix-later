@@ -146,6 +146,6 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
-		// runTestSuite(import('./git-blame.js'), eslintPath);
+		runTestSuite(import('./git-blame.js'), eslintPath);
 	});
 });

@@ -1,3 +1,4 @@
+import path from 'path';
 import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
 import { createFixture } from 'fs-fixture';
@@ -8,6 +9,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 	describe('git blame', async ({ test, onFinish }) => {
 		const fixture = await createFixture({
 			'file.js': 'console.log()',
+			'node_modules': ({ symlink }) => symlink(path.resolve('./node_modules')),
 		});
 		onFinish(() => fixture.rm());
 
