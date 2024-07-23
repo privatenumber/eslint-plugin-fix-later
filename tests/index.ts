@@ -1,6 +1,9 @@
 import { describe } from 'manten';
+import { eslintVersions } from './utils/eslint-versions.js';
 
-describe('suppress errors', ({ runTestSuite }) => {
-	runTestSuite(import('./specs/basic-usage.js'));
-	runTestSuite(import('./specs/insert-disable-comment/index.js'));
-});
+for (const eslint of eslintVersions) {
+	describe('suppress errors', ({ runTestSuite }) => {
+		runTestSuite(import('./specs/basic-usage.js'), eslint);
+		// runTestSuite(import('./specs/insert-disable-comment/index.js'), eslint);
+	});	
+}

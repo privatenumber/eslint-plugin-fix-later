@@ -2,11 +2,11 @@ import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
 import { eslint } from '../../utils/eslint.js';
 
-export default testSuite(({ describe }) => {
+export default testSuite(({ describe }, eslintPath: string) => {
 	describe('insertDisableComment', ({ describe, runTestSuite }) => {
 		describe('end-of-line', ({ test }) => {
 			test('added to complex line', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -37,7 +37,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('added to even more complex line', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -62,7 +62,7 @@ export default testSuite(({ describe }) => {
 
 		describe('above-line', ({ test }) => {
 			test('simple code', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -88,7 +88,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('complex code', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -120,7 +120,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('condensed code', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -146,6 +146,6 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		runTestSuite(import('./git-blame.js'));
+		runTestSuite(import('./git-blame.js'), eslintPath);
 	});
 });
