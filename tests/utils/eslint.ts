@@ -1,4 +1,5 @@
-import { execa } from 'execa';
+import path from 'path';
+import { execaNode } from 'execa';
 import type { ESLint, Linter } from 'eslint';
 import { name } from '../../package.json';
 import { installSelfPackage } from './install-self-package.js';
@@ -17,6 +18,7 @@ type Options = {
 };
 
 export const eslint = async (
+	eslintName: string,
 	{
 		cwd = process.cwd(),
 		config: configRaw,
@@ -55,14 +57,15 @@ export const eslint = async (
 		eslintArgs.push(code);
 	}
 
-	const eslintProcess = execa(
-		'eslint',
+	const eslintProcess = execaNode(
+		path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
 		eslintArgs,
 		{
 			cwd,
 			all: true,
 			stdio: 'pipe',
 			reject: false,
+			nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
 		},
 	);
 

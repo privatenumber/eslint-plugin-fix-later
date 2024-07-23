@@ -1,19 +1,21 @@
+import path from 'path';
 import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
 import { createFixture } from 'fs-fixture';
 import { execa } from 'execa';
 import { eslint } from '../../utils/eslint.js';
 
-export default testSuite(({ describe }) => {
+export default testSuite(({ describe }, eslintPath: string) => {
 	describe('git blame', async ({ test, onFinish }) => {
 		const fixture = await createFixture({
 			'file.js': 'console.log()',
+			node_modules: ({ symlink }) => symlink(path.resolve('./node_modules')),
 		});
 		onFinish(() => fixture.rm());
 
 		await test('No git project', async () => {
 			await expect(
-				() => eslint({
+				() => eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -40,7 +42,7 @@ export default testSuite(({ describe }) => {
 
 		await test('Unchecked file', async () => {
 			await expect(
-				() => eslint({
+				() => eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -60,7 +62,7 @@ export default testSuite(({ describe }) => {
 		await execa('git', ['add', 'file.js'], { cwd: fixture.path });
 
 		await test('Uncommitted file - gets current git user', async () => {
-			const result = await eslint({
+			const result = await eslint(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {
@@ -86,7 +88,7 @@ export default testSuite(({ describe }) => {
 		await execa('git', ['commit', '-am', 'a'], { cwd: fixture.path });
 
 		await test('Committed file', async () => {
-			const result = await eslint({
+			const result = await eslint(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {

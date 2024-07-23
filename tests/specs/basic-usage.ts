@@ -1,10 +1,10 @@
 import { testSuite, expect } from 'manten';
 import { eslint } from '../utils/eslint.js';
 
-export default testSuite(({ describe }) => {
+export default testSuite(({ describe }, eslintPath: string) => {
 	describe('basic usage', async ({ describe, test }) => {
 		test('off', async () => {
-			const result = await eslint({
+			const result = await eslint(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'off',
@@ -23,7 +23,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('ignores auto-fixable rules & no options', async () => {
-			const result = await eslint({
+			const result = await eslint(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'error',
@@ -43,7 +43,7 @@ export default testSuite(({ describe }) => {
 
 		describe('inherits severity', ({ test }) => {
 			test('"warning"', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 'warn',
@@ -82,7 +82,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('1', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 1,
@@ -122,7 +122,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('handles multiple rules', async () => {
-			const result = await eslint({
+			const result = await eslint(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'warn',
@@ -147,53 +147,59 @@ export default testSuite(({ describe }) => {
 					endColumn: 77,
 				},
 			]);
-			expect(result.suppressedMessages).toMatchObject([
-				{
-					ruleId: 'no-undef',
-					severity: 2,
-					message: "'asdf' is not defined.",
-					line: 1,
-					column: 1,
-					nodeType: 'Identifier',
-					messageId: 'undef',
-					endLine: 1,
-					endColumn: 5,
-					suppressions: [{
-						kind: 'directive',
-						justification: 'Fix later',
-					}],
-				},
-				{
-					ruleId: 'no-console',
-					severity: 2,
-					message: 'Unexpected console statement.',
-					line: 1,
-					column: 6,
-					nodeType: 'MemberExpression',
-					messageId: 'unexpected',
-					endLine: 1,
-					endColumn: 17,
-					suppressions: [{
-						kind: 'directive',
-						justification: 'Fix later',
-					}],
-				},
-				{
-					ruleId: 'no-undef',
-					severity: 2,
-					message: "'console' is not defined.",
-					line: 1,
-					column: 6,
-					nodeType: 'Identifier',
-					messageId: 'undef',
-					endLine: 1,
-					endColumn: 13,
-					suppressions: [{
-						kind: 'directive',
-						justification: 'Fix later',
-					}],
-				},
-			]);
+
+			// Added in ESLint v8.8.0
+			// https://github.com/eslint/eslint/commit/5d60812d440762dff72420714273c714c4c5d074
+			if ('suppressedMessages' in result) {
+				expect(result.suppressedMessages).toMatchObject([
+					{
+						ruleId: 'no-undef',
+						severity: 2,
+						message: "'asdf' is not defined.",
+						line: 1,
+						column: 1,
+						nodeType: 'Identifier',
+						messageId: 'undef',
+						endLine: 1,
+						endColumn: 5,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+					{
+						ruleId: 'no-console',
+						severity: 2,
+						message: 'Unexpected console statement.',
+						line: 1,
+						column: 6,
+						nodeType: 'MemberExpression',
+						messageId: 'unexpected',
+						endLine: 1,
+						endColumn: 17,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+					{
+						ruleId: 'no-undef',
+						severity: 2,
+						message: "'console' is not defined.",
+						line: 1,
+						column: 6,
+						nodeType: 'Identifier',
+						messageId: 'undef',
+						endLine: 1,
+						endColumn: 13,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+				]);
+			}
+
 			expect(result.output).toBe(
 				'asdf(console.log()) // eslint-disable-line no-undef, no-console -- Fix later',
 			);
@@ -201,7 +207,7 @@ export default testSuite(({ describe }) => {
 
 		describe('includeWarnings', ({ test }) => {
 			test('false', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn'],
@@ -221,7 +227,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('true', async () => {
-				const result = await eslint({
+				const result = await eslint(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
