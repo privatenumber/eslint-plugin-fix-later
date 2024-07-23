@@ -49,8 +49,5 @@
 		"pkgroll": "^2.4.1",
 		"tsx": "^4.16.2",
 		"typescript": "^5.5.3"
-	},
-	"eslintConfig": {
-		"extends": "@pvtnbr/eslint-config"
 	}
 }
