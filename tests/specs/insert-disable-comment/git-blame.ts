@@ -9,7 +9,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 	describe('git blame', async ({ test, onFinish }) => {
 		const fixture = await createFixture({
 			'file.js': 'console.log()',
-			'node_modules': ({ symlink }) => symlink(path.resolve('./node_modules')),
+			node_modules: ({ symlink }) => symlink(path.resolve('./node_modules')),
 		});
 		onFinish(() => fixture.rm());
 

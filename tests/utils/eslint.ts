@@ -65,7 +65,7 @@ export const eslint = async (
 			all: true,
 			stdio: 'pipe',
 			reject: false,
-			nodeOptions: ['--import', 'alias-imports', '-C', eslintName]
+			nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
 		},
 	);
 

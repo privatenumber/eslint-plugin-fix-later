@@ -22,15 +22,6 @@
 	],
 	"main": "./dist/index.cjs",
 	"exports": "./dist/index.cjs",
-	"packageManager": "pnpm@9.2.0",
-	"scripts": {
-		"test": "tsx tests",
-		"dev": "tsx watch tests",
-		"build": "pkgroll",
-		"lint": "lintroll . --ignore-pattern README.md",
-		"type-check": "tsc",
-		"prepack": "pnpm build && clean-pkg-json"
-	},
 	"imports": {
 		"eslint": {
 			"eslint7": "eslint7",
@@ -40,6 +31,15 @@
 			"eslint7": "eslint7/*",
 			"eslint8": "eslint8/*"
 		}
+	},
+	"packageManager": "pnpm@9.2.0",
+	"scripts": {
+		"test": "tsx tests",
+		"dev": "tsx watch tests",
+		"build": "pkgroll",
+		"lint": "lintroll . --ignore-pattern README.md",
+		"type-check": "tsc",
+		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"peerDependencies": {
 		"eslint": "^7.0.0"
