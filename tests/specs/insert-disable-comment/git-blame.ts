@@ -4,7 +4,7 @@ import { createFixture } from 'fs-fixture';
 import { execa } from 'execa';
 import { eslint } from '../../utils/eslint.js';
 
-export default testSuite(({ describe }, eslintPath: string ) => {
+export default testSuite(({ describe }, eslintPath: string) => {
 	describe('git blame', async ({ test, onFinish }) => {
 		const fixture = await createFixture({
 			'file.js': 'console.log()',

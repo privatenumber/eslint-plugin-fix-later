@@ -81,45 +81,45 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		// 		]);
 		// 	});
 
-			test('1', async () => {
-				const result = await eslint(eslintPath, {
-					config: {
-						rules: {
-							'fix-later/fix-later': 1,
-							'no-console': 'error',
-						},
+		test('1', async () => {
+			const result = await eslint(eslintPath, {
+				config: {
+					rules: {
+						'fix-later/fix-later': 1,
+						'no-console': 'error',
 					},
-					code: {
-						content: 'console.log()',
-					},
-				});
-				console.log('result', result);
-
-				expect(result.warningCount).toBe(1);
-				expect(result.errorCount).toBe(1);
-				expect(result.messages).toMatchObject([
-					{
-						line: 1,
-						column: 1,
-						endLine: 1,
-						endColumn: 12,
-
-						ruleId: 'no-console',
-						severity: 2,
-						message: 'Unexpected console statement.',
-						nodeType: 'MemberExpression',
-						messageId: 'unexpected',
-					},
-					{
-						line: 0,
-						column: 0,
-
-						ruleId: 'fix-later/fix-later',
-						severity: 1,
-						message: '1 suppressable errors (suppress with --fix)',
-					},
-				]);
+				},
+				code: {
+					content: 'console.log()',
+				},
 			});
+			console.log('result', result);
+
+			expect(result.warningCount).toBe(1);
+			expect(result.errorCount).toBe(1);
+			expect(result.messages).toMatchObject([
+				{
+					line: 1,
+					column: 1,
+					endLine: 1,
+					endColumn: 12,
+
+					ruleId: 'no-console',
+					severity: 2,
+					message: 'Unexpected console statement.',
+					nodeType: 'MemberExpression',
+					messageId: 'unexpected',
+				},
+				{
+					line: 0,
+					column: 0,
+
+					ruleId: 'fix-later/fix-later',
+					severity: 1,
+					message: '1 suppressable errors (suppress with --fix)',
+				},
+			]);
+		});
 		// });
 
 		// test('handles multiple rules', async () => {
