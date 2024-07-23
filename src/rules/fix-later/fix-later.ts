@@ -88,12 +88,6 @@ const suppressFileErrors = (
 			.join(', ');
 
 		const [message] = lineGroup;
-
-		const lineStart = sourceCode.getIndexFromLoc({
-			line: message.line,
-			column: 0,
-		});
-
 		const reportedIndex = sourceCode.getIndexFromLoc({
 			line: message.line,
 			column: message.column - 1,
@@ -119,6 +113,11 @@ const suppressFileErrors = (
 				throw new Error(`Can't find key: ${key}`);
 			},
 		);
+
+		const lineStart = sourceCode.getIndexFromLoc({
+			line: message.line,
+			column: 0,
+		});
 
 		messages.push({
 			ruleId,
