@@ -212,22 +212,22 @@ const suppressFileErrors = (
 				),
 			});
 		} else {
-			// let blameData: GitBlame | undefined;
-			// const comment = interpolateString(
-			// 	commentTemplate,
-			// 	{
-			// 		'eslint-disable': `eslint-disable ${rulesToDisable}`,
-			// 		get blame() {
-			// 			if (filename && !blameData) {
-			// 				blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
-			// 			}
-			// 			return blameData;
-			// 		},
-			// 	},
-			// 	(_match, key) => {
-			// 		throw new Error(`Can't find key: ${key}`);
-			// 	},
-			// );
+			let blameData: GitBlame | undefined;
+			const comment = interpolateString(
+				commentTemplate,
+				{
+					'eslint-disable': `eslint-disable ${rulesToDisable}`,
+					get blame() {
+						if (filename && !blameData) {
+							blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
+						}
+						return blameData;
+					},
+				},
+				(_match, key) => {
+					throw new Error(`Can't find key: ${key}`);
+				},
+			);
 
 			messages.push(
 				{
@@ -239,7 +239,7 @@ const suppressFileErrors = (
 					fix: insertCommentAboveLine(
 						code,
 						indices[0],
-						`<!-- eslint-disable ${rulesToDisable} -->`,
+						`<!-- ${comment} -->`,
 					),
 				},
 				{
