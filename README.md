@@ -118,7 +118,7 @@ Whether to put the `eslint-disable` comment on the same line or on the line abov
 
 Type: string
 
-Default: `'// {{ eslint-disable }} -- Fix later'`
+Default: `'Fix later'`
 
 The template for the `eslint-disable` comment. The `{{ eslint-disable }}` handlebar is required to interpolate the `eslint-disable` type into.
 
@@ -126,7 +126,7 @@ The template for the `eslint-disable` comment. The `{{ eslint-disable }}` handle
 
 You can also `git blame` the errorneous code and leave a TODO for the author:
 ```
-// {{ eslint-disable }} -- Please fix: {{ blame.author }} <{{ blame.author-mail }}>
+Please fix: {{ blame.author }} <{{ blame.author-mail }}>
 ```
 
 Which will create the following comment:
