@@ -14,15 +14,11 @@ export const normalizeOptions = (
 	options: RuleOptions | undefined,
 ): RuleOptions => {
 	const insertDisableComment = options?.insertDisableComment ?? 'end-of-line';
-	const commentTemplate = options?.commentTemplate ?? '// {{ eslint-disable }} -- Fix later';
+	const commentTemplate = options?.commentTemplate ?? 'Fix later';
 
-	if (!commentTemplate.includes('{{ eslint-disable }}')) {
-		throw new Error('commentTemplate must include {{ eslint-disable }}');
-	}
-
-	if (!commentTemplate.includes('--')) {
+	if (!commentTemplate) {
 		// If there is no description, then it's not discernable from other disable directives
-		throw new Error('commentTemplate must include a description (e.g. "// {{ eslint-disable }} -- Fix later")');
+		throw new Error('commentTemplate must include a description (e.g. "Fix later")');
 	}
 
 	return {
@@ -33,7 +29,7 @@ export const normalizeOptions = (
 				? 'eslint-disable-next-line'
 				: 'eslint-disable-line'
 		),
-		commentTemplate,
+		commentTemplate: '// {{ eslint-disable }} -- ' + commentTemplate,
 	};
 };
 
