@@ -248,33 +248,33 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
-		// test('vue', async () => {
-		// 	const result = await eslint({
-		// 		config: {
-		// 			extends: 'plugin:vue/vue3-recommended',
-		// 			rules: {
-		// 				'fix-later/fix-later': 'error',
-		// 			},
-		// 		},
-		// 		code: {
-		// 			name: 'FileA.vue',
-		// 			content: `
-		// 			<template>
-		// 				<div
-		// 					title="header"
-		// 					v-for="item in items"
-		// 				/>
-		// 			</template>
-		// 			`,
-		// 		},
-		// 		fix: true,
-		// 	});
+		test('vue', async () => {
+			const result = await eslint(eslintPath, {
+				config: {
+					extends: 'plugin:vue/vue3-recommended',
+					rules: {
+						'fix-later/fix-later': 'error',
+					},
+				},
+				code: {
+					name: 'FileA.vue',
+					content: `
+					<template>
+						<div
+							title="header"
+							v-for="item in items"
+						/>
+					</template>
+					`,
+				},
+				fix: true,
+			});
 
-		// 	console.log(result);
-		// 	expect(result.warningCount).toBe(1);
-		// 	expect(result.errorCount).toBe(0);
+			console.log(result);
+			expect(result.warningCount).toBe(1);
+			expect(result.errorCount).toBe(0);
 
-		// 	expect(result.output).toBeUndefined();
-		// });
+			expect(result.output).toBeUndefined();
+		});
 	});
 });

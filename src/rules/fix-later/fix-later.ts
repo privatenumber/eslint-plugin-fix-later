@@ -18,6 +18,51 @@ import { ruleId, ruleOptions } from './rule-meta';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
+
+const safeRequire = (id: string) => {
+	try {
+		return require(id);
+	} catch {
+		return null;
+	}
+}
+
+const getVueElement = (
+	index,
+	rootNode,
+) => {
+	const vueEslintParser = safeRequire('vue-eslint-parser');
+	if (!vueEslintParser) {
+		return;
+	}
+
+	let result = null;
+	let broken = false;
+	const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer'];
+	vueEslintParser.AST.traverseNodes(rootNode, {
+		enterNode(node) {
+			if (broken) {
+				return;
+			}
+
+			if (
+				!disallowedTypes.includes(node.type)
+				&& node.range[0] <= index
+				&& index < node.range[1]
+			) {
+				result = node;
+			}
+		},
+		leaveNode(node) {
+			if (!broken && node === result) {
+				broken = true;
+			}
+		}
+	});
+
+	return result;
+};
+
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
 const suppressFileErrors = (
@@ -93,55 +138,105 @@ const suppressFileErrors = (
 			column: message.column - 1,
 		});
 
-		// const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.()
-		// console.dir(vueDocumentFragment);
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
-		if (!reportedNode) {
-			continue;
-		}
-
-		let blameData: GitBlame | undefined;
-		const comment = interpolateString(
-			commentTemplate,
-			{
-				'eslint-disable': `${ruleOptions.disableDirective} ${rulesToDisable}`,
-				get blame() {
-					if (filename && !blameData) {
-						blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
-					}
-					return blameData;
+		if (reportedNode) {
+			let blameData: GitBlame | undefined;
+			const comment = interpolateString(
+				commentTemplate,
+				{
+					'eslint-disable': `${ruleOptions.disableDirective} ${rulesToDisable}`,
+					get blame() {
+						if (filename && !blameData) {
+							blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
+						}
+						return blameData;
+					},
 				},
-			},
-			(_match, key) => {
-				throw new Error(`Can't find key: ${key}`);
-			},
-		);
+				(_match, key) => {
+					throw new Error(`Can't find key: ${key}`);
+				},
+			);
+	
+			const lineStart = sourceCode.getIndexFromLoc({
+				line: message.line,
+				column: 0,
+			});
+	
+			messages.push({
+				ruleId,
+				severity: ruleSeverity,
+				message: `Suppressing errors: ${rulesToDisable}`,
+				line: message.line,
+				column: message.column,
+				fix: (
+					ruleOptions.insertDisableComment === 'above-line'
+						? insertIgnoreAboveLine(
+							code,
+							lineStart,
+							comment,
+						)
+						: insertIgnoreSameLine(
+							code,
+							lineStart,
+							comment,
+						)
+				),
+			});
+		} else {
+			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
+			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
 
-		const lineStart = sourceCode.getIndexFromLoc({
-			line: message.line,
-			column: 0,
-		});
+			if (templateNode) {
+				// console.log({ commentTemplate });
+				let blameData: GitBlame | undefined;
+				const comment = interpolateString(
+					commentTemplate,
+					{
+						'eslint-disable': `eslint-disable ${rulesToDisable}`,
+						get blame() {
+							if (filename && !blameData) {
+								blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
+							}
+							return blameData;
+						},
+					},
+					(_match, key) => {
+						throw new Error(`Can't find key: ${key}`);
+					},
+				);
+				const commentStart = `<!-- eslint-disable ${rulesToDisable} -- ${comment} -->`;
+				console.log({
+					commentStart,
+					templateNode,
+				});
 
-		messages.push({
-			ruleId,
-			severity: ruleSeverity,
-			message: `Suppressing errors: ${rulesToDisable}`,
-			line: message.line,
-			column: message.column,
-			fix: (
-				ruleOptions.insertDisableComment === 'above-line'
-					? insertIgnoreAboveLine(
-						code,
-						lineStart,
-						comment,
-					)
-					: insertIgnoreSameLine(
-						code,
-						lineStart,
-						comment,
-					)
-			),
-		});
+
+				messages.push(
+					{
+						ruleId,
+						severity: ruleSeverity,
+						message: `Suppressing errors start: ${rulesToDisable}`,
+						line: message.line,
+						column: message.column,
+						fix: {
+							range: [templateNode.range[0], templateNode.range[0]],
+							text: `${commentStart}\n`,
+						},
+					},
+					{
+						ruleId,
+						severity: ruleSeverity,
+						message: `Suppressing errors end: ${rulesToDisable}`,
+						line: message.line,
+						column: message.column,
+						fix: {
+							range: [templateNode.range[1], templateNode.range[1]],
+							text: `<!--eslint-enable -->`,
+						},
+					},
+				);
+			}
+		}
 
 		// In practice, ESLint runs multiple times so the suppressed rules
 		// don't need to be removed
