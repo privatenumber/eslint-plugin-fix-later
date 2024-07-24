@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint';
 
-export const insertIgnoreAboveLine = (
+export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
 	comment: string,
@@ -13,7 +13,7 @@ export const insertIgnoreAboveLine = (
 	};
 };
 
-export const insertIgnoreSameLine = (
+export const insertCommentSameLine = (
 	code: string,
 	lineStart: number,
 	comment: string,

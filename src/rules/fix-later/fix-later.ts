@@ -1,11 +1,10 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
 import {
 	getSeverity,
-	groupMessagesByLine,
 } from './utils/eslint';
 import {
-	insertIgnoreAboveLine,
-	insertIgnoreSameLine,
+	insertCommentAboveLine,
+	insertCommentSameLine,
 } from './utils/fixer';
 import {
 	gitBlame,
@@ -38,7 +37,7 @@ const getVueElement = (
 
 	let result = null;
 	let broken = false;
-	const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer'];
+	const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText'];
 	vueEslintParser.AST.traverseNodes(rootNode, {
 		enterNode(node) {
 			if (broken) {
@@ -125,21 +124,56 @@ const suppressFileErrors = (
 	}
 
 	const { commentTemplate } = ruleOptions;
-	const messagesGroupedByLine = groupMessagesByLine(processMessages);
 
-	for (const lineGroup of messagesGroupedByLine) {
-		const rulesToDisable = lineGroup
-			.map(rule => rule.ruleId)
-			.join(', ');
+	// The number is the line where the disable comment should be inserted
+	const groupedByLine: Record<string, LintMessage[]> = {};
+	const addMessage = (key: string | number, message: LintMessage) => {
+		if (!groupedByLine[key]) {
+			groupedByLine[key] = [];
+		}
+		groupedByLine[key].push(message);
+	}
 
-		const [message] = lineGroup;
+	for (const message of processMessages) {
 		const reportedIndex = sourceCode.getIndexFromLoc({
 			line: message.line,
 			column: message.column - 1,
 		});
-
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
 		if (reportedNode) {
+			const lineStart = sourceCode.getIndexFromLoc({
+				line: message.line,
+				column: 0,
+			});
+			addMessage(lineStart, message);
+		} else {
+			// Vue.js template
+			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
+			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
+
+			if (templateNode) {
+				// console.log(templateNode.type, templateNode.loc, message);
+				const lineStart = sourceCode.getIndexFromLoc({
+					line: templateNode.loc.start.line,
+					column: 0,
+				});
+				const lineEnd = sourceCode.getIndexFromLoc({
+					line: templateNode.loc.end.line + 1,
+					column: 0,
+				});
+				const line = lineStart + '-' + lineEnd;
+				addMessage(line, message);
+			}
+		}
+	}
+
+	for (const key in groupedByLine) {
+		const groupedMessages = groupedByLine[key];
+		const rulesToDisable = Array.from(new Set(groupedMessages.map(rule => rule.ruleId))).join(', ');
+
+		const [message] = groupedMessages;
+		const indices = key.split('-').map(Number);
+		if (indices.length === 1) {
 			let blameData: GitBlame | undefined;
 			const comment = interpolateString(
 				commentTemplate,
@@ -157,11 +191,6 @@ const suppressFileErrors = (
 				},
 			);
 	
-			const lineStart = sourceCode.getIndexFromLoc({
-				line: message.line,
-				column: 0,
-			});
-	
 			messages.push({
 				ruleId,
 				severity: ruleSeverity,
@@ -170,76 +199,63 @@ const suppressFileErrors = (
 				column: message.column,
 				fix: (
 					ruleOptions.insertDisableComment === 'above-line'
-						? insertIgnoreAboveLine(
+						? insertCommentAboveLine(
 							code,
-							lineStart,
+							indices[0],
 							comment,
 						)
-						: insertIgnoreSameLine(
+						: insertCommentSameLine(
 							code,
-							lineStart,
+							indices[0],
 							comment,
 						)
 				),
 			});
 		} else {
-			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
-			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
+			// let blameData: GitBlame | undefined;
+			// const comment = interpolateString(
+			// 	commentTemplate,
+			// 	{
+			// 		'eslint-disable': `eslint-disable ${rulesToDisable}`,
+			// 		get blame() {
+			// 			if (filename && !blameData) {
+			// 				blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
+			// 			}
+			// 			return blameData;
+			// 		},
+			// 	},
+			// 	(_match, key) => {
+			// 		throw new Error(`Can't find key: ${key}`);
+			// 	},
+			// );
 
-			if (templateNode) {
-				// console.log({ commentTemplate });
-				let blameData: GitBlame | undefined;
-				const comment = interpolateString(
-					commentTemplate,
-					{
-						'eslint-disable': `eslint-disable ${rulesToDisable}`,
-						get blame() {
-							if (filename && !blameData) {
-								blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
-							}
-							return blameData;
-						},
-					},
-					(_match, key) => {
-						throw new Error(`Can't find key: ${key}`);
-					},
-				);
-				const commentStart = `<!-- eslint-disable ${rulesToDisable} -- ${comment} -->`;
-				console.log({
-					commentStart,
-					templateNode,
-				});
-
-
-				messages.push(
-					{
-						ruleId,
-						severity: ruleSeverity,
-						message: `Suppressing errors start: ${rulesToDisable}`,
-						line: message.line,
-						column: message.column,
-						fix: {
-							range: [templateNode.range[0], templateNode.range[0]],
-							text: `${commentStart}\n`,
-						},
-					},
-					{
-						ruleId,
-						severity: ruleSeverity,
-						message: `Suppressing errors end: ${rulesToDisable}`,
-						line: message.line,
-						column: message.column,
-						fix: {
-							range: [templateNode.range[1], templateNode.range[1]],
-							text: `<!--eslint-enable -->`,
-						},
-					},
-				);
-			}
+			messages.push(
+				{
+					ruleId,
+					severity: ruleSeverity,
+					message: `Suppressing errors start: ${rulesToDisable}`,
+					line: message.line,
+					column: message.column,
+					fix: insertCommentAboveLine(
+						code,
+						indices[0],
+						`<!-- eslint-disable ${rulesToDisable} -->`,
+					),
+				},
+				{
+					ruleId,
+					severity: ruleSeverity,
+					message: `Suppressing errors end: ${rulesToDisable}`,
+					line: message.line,
+					column: message.column,
+					fix: insertCommentAboveLine(
+						code,
+						indices[1],
+						`<!-- eslint-enable ${rulesToDisable} -->`,
+					),
+				}
+			);
 		}
-
-		// In practice, ESLint runs multiple times so the suppressed rules
-		// don't need to be removed
 	}
 
 	return messages;
