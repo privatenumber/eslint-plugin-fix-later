@@ -4,15 +4,15 @@ import { getProperty } from 'dot-prop';
 const handlebarPattern = /\{\{\s*(.+?)\s*\}\}/g;
 
 export const interpolateString = (
-	string: string,
+	template: string,
 	data: Record<string, unknown>,
 	onMissingKey: (match: string, key: string) => string,
 ) => {
-	if (!handlebarPattern.test(string)) {
-		return string;
+	if (!handlebarPattern.test(template)) {
+		return template;
 	}
 
-	return string.replaceAll(handlebarPattern, (match, key) => {
+	return template.replaceAll(handlebarPattern, (match, key) => {
 		const value = getProperty(data, key) as unknown as string | undefined;
 		return value ?? onMissingKey(match, key);
 	});

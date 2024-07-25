@@ -39,11 +39,9 @@ export const fixLater = {
 		const descriptionDelimiter = '--';
 
 		const wildCard = Math.random().toString(36).slice(2);
-		const template = interpolateString(
+		const template = `${options.disableDirective} ${wildCard} -- ` + interpolateString(
 			options.commentTemplate,
-			{
-				'eslint-disable': `${options.disableDirective} ${wildCard}`,
-			},
+			{},
 			() => wildCard,
 		);
 		const suppressCommentPattern = new RegExp(`^${escapeRegExp(template).replaceAll(wildCard, '.+?')}$`);

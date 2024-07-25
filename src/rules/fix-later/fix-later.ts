@@ -10,9 +10,7 @@ import {
 	gitBlame,
 	type GitBlame,
 } from './utils/git.js';
-import {
-	interpolateString,
-} from './utils/interpolate-string.js';
+import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElement } from './utils/vue.js';
 
@@ -134,10 +132,9 @@ const suppressFileErrors = (
 		const indices = key.split('-').map(Number);
 		if (indices.length === 1) {
 			let blameData: GitBlame | undefined;
-			const comment = interpolateString(
+			const comment = `${ruleOptions.disableDirective} ${rulesToDisable} -- ` + interpolateString(
 				commentTemplate,
 				{
-					'eslint-disable': `${ruleOptions.disableDirective} ${rulesToDisable}`,
 					get blame() {
 						if (filename && !blameData) {
 							blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
@@ -172,10 +169,9 @@ const suppressFileErrors = (
 			});
 		} else {
 			let blameData: GitBlame | undefined;
-			const comment = interpolateString(
+			const comment = `eslint-disable ${rulesToDisable} -- ` + interpolateString(
 				commentTemplate,
 				{
-					'eslint-disable': `eslint-disable ${rulesToDisable}`,
 					get blame() {
 						if (filename && !blameData) {
 							blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
