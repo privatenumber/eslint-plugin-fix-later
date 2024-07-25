@@ -133,13 +133,10 @@ const suppressFileErrors = (
 	}
 
 	const getLineComment = (
-		messages: LintMessage[],
+		message: LintMessage,
 	): string => {
-		const rulesToDisable = getRuleIds(messages).join(', ');
-		const [message] = messages;
-
 		let blameData: GitBlame | undefined;
-		const comment = `${ruleOptions!.disableDirective} ${rulesToDisable} -- ` + interpolateString(
+		const comment = interpolateString(
 			commentTemplate,
 			{
 				get blame() {
@@ -148,6 +145,7 @@ const suppressFileErrors = (
 					}
 					return blameData;
 				},
+				// TODO: codeowners
 			},
 			(_match, key) => {
 				throw new Error(`Can't find key: ${key}`);
@@ -161,11 +159,12 @@ const suppressFileErrors = (
 		const groupedMessages = groupedByLine[key];
 		const comments = [];
 		if (groupedMessages.line.length > 0) {
-			comments.push(getLineComment(groupedMessages.line));
+			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
+			comments.push(`${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])}`);
 		}
 		if (groupedMessages.start.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
-			comments.push(`<!-- eslint-disable ${rulesToDisable} -->`);
+			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])} -->`);
 		}
 		if (groupedMessages.end.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');

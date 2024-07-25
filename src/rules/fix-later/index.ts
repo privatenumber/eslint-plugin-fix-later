@@ -36,40 +36,49 @@ export const fixLater = {
 		const options = normalizeOptions(context.options[0]);
 		setRuleUsage(context.id, options);
 
-		const descriptionDelimiter = '--';
-
-		const wildCard = Math.random().toString(36).slice(2);
-		const template = `${options.disableDirective} ${wildCard} -- ` + interpolateString(
-			options.commentTemplate,
-			{},
-			() => wildCard,
-		);
-		const suppressCommentPattern = new RegExp(`^${escapeRegExp(template).replaceAll(wildCard, '.+?')}$`);
+		const descriptionDelimiter = ' -- ';
 
 		// For older versions of ESLint
 		const sourceCode = context.sourceCode ?? context.getSourceCode();
 		const comments = sourceCode.getAllComments();
 
-		for (const comment of comments) {
-			// comment.value doesn't contain the syntax of the comment
-			const commentString = sourceCode.text.slice(comment.range![0], comment.range![1]);
-
-			if (!suppressCommentPattern.test(commentString)) {
-				continue;
-			}
-
+		const reportCommentDescription = (
+			commentString: string,
+			commentLocation: unknown
+		) => {
 			const descriptionIndex = commentString.indexOf(descriptionDelimiter);
+			if (descriptionIndex === -1) {
+				return;
+			}
 			const description = commentString.slice(
 				descriptionIndex + descriptionDelimiter.length,
 			).trim();
 
 			context.report({
-				loc: comment.loc!,
+				loc: commentLocation,
 				messageId: 'remindToFix',
 				data: {
 					description,
 				},
 			});
+		};
+
+		for (const comment of comments) {
+			// comment.value doesn't contain the syntax of the comment
+			const commentString = sourceCode.text.slice(comment.range![0] + 2, comment.range![1]).trim();
+			if (commentString.startsWith('eslint-disable-')) {
+				reportCommentDescription(commentString, comment.loc);
+			}
+		}
+
+		const document = sourceCode.parserServices.getDocumentFragment?.();
+		if (document) {
+			for (const comment of document.comments) {
+				const commentText = comment.value.trim();
+				if (commentText.startsWith('eslint-disable')) {
+					reportCommentDescription(commentText, comment.loc);
+				}
+			}
 		}
 
 		return {};

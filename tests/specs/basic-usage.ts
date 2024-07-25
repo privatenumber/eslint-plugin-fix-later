@@ -274,12 +274,23 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				fix: true,
 			});
 
-			expect(result.warningCount).toBe(0);
-			expect(result.errorCount).toBe(0);
+			expect(result.messages).toMatchObject([
+				{
+					ruleId: 'fix-later/fix-later',
+					severity: 2,
+					message: '[REMINDER] Fix later',
+					line: 2,
+					column: 2,
+					endLine: 2,
+					endColumn: 96,
+				},
+			]);
+
+			expect(result.errorCount).toBe(1);
 			expect(result.output).toBe(
 				outdent`
 				<template>
-					<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -->
+					<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
 					<template
 						v-text="asdf"
 						v-html="asdf"
