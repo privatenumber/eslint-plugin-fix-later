@@ -19,7 +19,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
-								commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
+								commentTemplate: '{{ blame.author }} {{ blame.author-mail }}',
 							}],
 							'no-console': 'error',
 						},
@@ -46,7 +46,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
-								commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} {{ blame.author-mail }}',
+								commentTemplate: '{{ blame.author }} {{ blame.author-mail }}',
 							}],
 							'no-console': 'error',
 						},
@@ -66,7 +66,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {
-							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
+							commentTemplate: '{{ blame.author }} <{{ blame.author-mail }}>',
 						}],
 						'no-console': 'error',
 					},
@@ -92,7 +92,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {
-							commentTemplate: '// {{ eslint-disable }} -- {{ blame.author }} <{{ blame.author-mail }}>',
+							commentTemplate: '{{ blame.author }} <{{ blame.author-mail }}>',
 						}],
 						'no-console': 'error',
 					},
