@@ -13,7 +13,6 @@ type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
-
 const getRuleIds = (
 	lintMessages: LintMessage[],
 ) => {
@@ -93,9 +92,9 @@ const suppressFileErrors = (
 
 	// The number is the line where the disable comment should be inserted
 	const groupedByLine: Record<string, {
-		line: LintMessage[],
-		start: LintMessage[],
-		end: LintMessage[],
+		line: LintMessage[];
+		start: LintMessage[];
+		end: LintMessage[];
 	}> = {};
 	const addMessage = (
 		key: string | number,

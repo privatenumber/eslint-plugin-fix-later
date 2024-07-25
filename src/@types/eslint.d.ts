@@ -1,4 +1,3 @@
-import type { SourceCode } from 'eslint';
 import type { AST } from 'vue-eslint-parser';
 
 declare module 'eslint' {
@@ -19,7 +18,6 @@ declare module 'eslint' {
 			options: Linter.FixOptions,
 		): LintMessage[];
 	}
-
 
 	interface SourceCode {
 		parserServices: {

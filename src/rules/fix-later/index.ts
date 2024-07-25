@@ -1,9 +1,9 @@
 import { type Rule } from 'eslint';
 import './fix-later.js';
+import type { SourceLocation } from 'estree';
 import { setRuleUsage, normalizeOptions } from './rule-meta.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { escapeRegExp } from './utils/escape-regexp.js';
-import type { SourceLocation } from 'estree';
 
 export const fixLater = {
 	meta: {

@@ -8,7 +8,7 @@ const safeRequire = <Type>(id: string) => {
 	}
 };
 
-const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText'];
+const disallowedTypes = new Set(['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText']);
 
 /**
  * Re-implementation of getNodeByRangeIndex
@@ -23,27 +23,27 @@ export const getVueElement = (
 		return;
 	}
 
-	let result: AST.Node | undefined = undefined;
+	let result: AST.Node | undefined;
 	let broken = false;
 	vueEslintParser.AST.traverseNodes(rootNode, {
-		enterNode(node) {
+		enterNode: (node) => {
 			if (broken) {
 				return;
 			}
 
 			if (
-				!disallowedTypes.includes(node.type)
+				!disallowedTypes.has(node.type)
 				&& node.range[0] <= index
 				&& index < node.range[1]
 			) {
 				result = node;
 			}
 		},
-		leaveNode(node) {
+		leaveNode: (node) => {
 			if (!broken && node === result) {
 				broken = true;
 			}
-		}
+		},
 	});
 
 	return result;
