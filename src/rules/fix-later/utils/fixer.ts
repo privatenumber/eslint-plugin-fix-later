@@ -5,7 +5,8 @@ export const insertCommentAboveLine = (
 	lineStart: number,
 	comment: string,
 ): Rule.Fix => {
-	const indentation = code.slice(lineStart).match(/^\s*/)![0];
+	// \s can include new lines which we don't want
+	const indentation = code.slice(lineStart).match(/^[\t ]*/)![0];
 
 	return {
 		range: [lineStart, lineStart],

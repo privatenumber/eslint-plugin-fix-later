@@ -1,66 +1,22 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
 import {
 	getSeverity,
-} from './utils/eslint';
+} from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
 	insertCommentSameLine,
-} from './utils/fixer';
+} from './utils/fixer.js';
 import {
 	gitBlame,
 	type GitBlame,
-} from './utils/git';
+} from './utils/git.js';
 import {
 	interpolateString,
-} from './utils/interpolate-string';
-import { ruleId, ruleOptions } from './rule-meta';
+} from './utils/interpolate-string.js';
+import { ruleId, ruleOptions } from './rule-meta.js';
+import { getVueElement } from './utils/vue.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
-
-
-const safeRequire = (id: string) => {
-	try {
-		return require(id);
-	} catch {
-		return null;
-	}
-}
-
-const getVueElement = (
-	index,
-	rootNode,
-) => {
-	const vueEslintParser = safeRequire('vue-eslint-parser');
-	if (!vueEslintParser) {
-		return;
-	}
-
-	let result = null;
-	let broken = false;
-	const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText'];
-	vueEslintParser.AST.traverseNodes(rootNode, {
-		enterNode(node) {
-			if (broken) {
-				return;
-			}
-
-			if (
-				!disallowedTypes.includes(node.type)
-				&& node.range[0] <= index
-				&& index < node.range[1]
-			) {
-				result = node;
-			}
-		},
-		leaveNode(node) {
-			if (!broken && node === result) {
-				broken = true;
-			}
-		}
-	});
-
-	return result;
-};
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
@@ -152,7 +108,6 @@ const suppressFileErrors = (
 			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
 
 			if (templateNode) {
-				// console.log(templateNode.type, templateNode.loc, message);
 				const lineStart = sourceCode.getIndexFromLoc({
 					line: templateNode.loc.start.line,
 					column: 0,
