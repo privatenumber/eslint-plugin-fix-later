@@ -39,6 +39,14 @@ export const fixLater = {
 
 		const descriptionDelimiter = ' -- ';
 
+		const wildCard = Math.random().toString(36).slice(2);
+		const template = interpolateString(
+			options.commentTemplate,
+			{},
+			() => wildCard,
+		);
+		const suppressCommentPattern = new RegExp(`^${escapeRegExp(template).replaceAll(wildCard, '.+?')}$`);
+
 		// For older versions of ESLint
 		const sourceCode = context.sourceCode ?? context.getSourceCode();
 		const comments = sourceCode.getAllComments();
@@ -51,9 +59,11 @@ export const fixLater = {
 			if (descriptionIndex === -1) {
 				return;
 			}
-			const description = commentString.slice(
-				descriptionIndex + descriptionDelimiter.length,
-			).trim();
+
+			const description = commentString.slice(descriptionIndex + descriptionDelimiter.length);
+			if (!suppressCommentPattern.test(description)) {
+				return;
+			}
 
 			context.report({
 				loc: commentLocation,
@@ -72,9 +82,9 @@ export const fixLater = {
 			}
 		}
 
-		const document = sourceCode.parserServices.getDocumentFragment?.();
-		if (document) {
-			for (const comment of document.comments) {
+		const vueDocument = sourceCode.parserServices.getDocumentFragment?.();
+		if (vueDocument) {
+			for (const comment of vueDocument.comments) {
 				const commentText = comment.value.trim();
 				if (commentText.startsWith('eslint-disable')) {
 					reportCommentDescription(commentText, comment.loc);
