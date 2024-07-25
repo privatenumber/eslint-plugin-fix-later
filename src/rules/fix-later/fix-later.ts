@@ -155,6 +155,10 @@ const suppressFileErrors = (
 	};
 
 	for (const key in groupedByLine) {
+		if (!Object.hasOwn(groupedByLine, key)) {
+			continue;
+		}
+
 		const groupedMessages = groupedByLine[key];
 		const comments = [];
 		if (groupedMessages.line.length > 0) {

@@ -2,6 +2,7 @@ import type { AST } from 'vue-eslint-parser';
 
 const safeRequire = <Type>(id: string) => {
 	try {
+		// eslint-disable-next-line import-x/no-dynamic-require, @typescript-eslint/no-var-requires
 		return require(id) as Type;
 	} catch {
 		return null;
