@@ -65,7 +65,6 @@ export const getCodeOwner = (
 	}
 
 	const relativeFilepath = path.relative(gitRepo, filePath);
-
 	const foundMatch = codeOwners.find(([pattern]) => {
 		const ig = ignore().add(pattern);
 		return ig.ignores(relativeFilepath);
