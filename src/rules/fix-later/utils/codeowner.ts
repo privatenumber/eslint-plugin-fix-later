@@ -26,7 +26,7 @@ const cache = new Map<string, string[][]>();
 const getCodeOwnerForGitRepo = (
 	repoPath: string,
 ) => {
-	let codeOwners = cache.get(repoPath);
+	const codeOwners = cache.get(repoPath);
 	if (codeOwners) {
 		return codeOwners;
 	}

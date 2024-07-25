@@ -34,14 +34,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					}),
 				).rejects.toThrow('not a git repository');
 			});
-	
+
 			// Setup git
 			await execa('git', ['init'], { cwd: fixture.path });
 			await execa('git', ['config', 'user.name', 'John Doe'], { cwd: fixture.path });
 			await execa('git', ['config', 'user.email', 'john@doe.org'], { cwd: fixture.path });
-	
+
 			await execa('git', ['commit', '--allow-empty', '-m', 'test'], { cwd: fixture.path });
-	
+
 			await test('Unchecked file', async () => {
 				await expect(
 					() => eslint(eslintPath, {
@@ -59,10 +59,10 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					}),
 				).rejects.toThrow('no such path \'file.js\' in HEAD');
 			});
-	
+
 			// Add file
 			await execa('git', ['add', 'file.js'], { cwd: fixture.path });
-	
+
 			await test('Uncommitted file - gets current git user', async () => {
 				const result = await eslint(eslintPath, {
 					config: {
@@ -77,7 +77,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					cwd: fixture.path,
 					fix: true,
 				});
-	
+
 				expect(result.warningCount).toBe(1);
 				expect(result.errorCount).toBe(0);
 				expect(result.output).toBe(
@@ -86,9 +86,9 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					`,
 				);
 			});
-	
+
 			await execa('git', ['commit', '-am', 'a'], { cwd: fixture.path });
-	
+
 			await test('Committed file', async () => {
 				const result = await eslint(eslintPath, {
 					config: {
@@ -103,7 +103,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					cwd: fixture.path,
 					fix: true,
 				});
-	
+
 				expect(result.warningCount).toBe(1);
 				expect(result.errorCount).toBe(0);
 				expect(result.output).toBe(
@@ -129,7 +129,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					cwd: fixture.path,
 					fix: true,
 				});
-	
+
 				expect(result.warningCount).toBe(1);
 				expect(result.errorCount).toBe(0);
 				expect(result.output).toBe(
