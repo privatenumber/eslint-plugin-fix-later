@@ -1,24 +1,29 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
+import { getSeverity } from './utils/eslint.js';
 import {
-	getSeverity,
-	groupMessagesByLine,
-} from './utils/eslint';
-import {
-	insertIgnoreAboveLine,
-	insertIgnoreSameLine,
-} from './utils/fixer';
-import {
-	gitBlame,
-	type GitBlame,
-} from './utils/git';
-import {
-	interpolateString,
-} from './utils/interpolate-string';
-import { ruleId, ruleOptions } from './rule-meta';
+	insertCommentAboveLine,
+	insertCommentSameLine,
+} from './utils/fixer.js';
+import { gitBlame, type GitBlame } from './utils/git.js';
+import { interpolateString } from './utils/interpolate-string.js';
+import { ruleId, ruleOptions } from './rule-meta.js';
+import { getVueElement } from './utils/vue.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
+
+const getRuleIds = (
+	lintMessages: LintMessage[],
+) => {
+	const ruleIds: string[] = [];
+	for (const message of lintMessages) {
+		if (message.ruleId && !ruleIds.includes(message.ruleId)) {
+			ruleIds.push(message.ruleId);
+		}
+	}
+	return ruleIds;
+};
 
 const suppressFileErrors = (
 	code: string,
@@ -79,69 +84,126 @@ const suppressFileErrors = (
 		return messages;
 	}
 
+	if (processMessages.length === 0) {
+		return messages;
+	}
+
 	const { commentTemplate } = ruleOptions;
-	const messagesGroupedByLine = groupMessagesByLine(processMessages);
 
-	for (const lineGroup of messagesGroupedByLine) {
-		const rulesToDisable = lineGroup
-			.map(rule => rule.ruleId)
-			.join(', ');
+	// The number is the line where the disable comment should be inserted
+	const groupedByLine: Record<string, {
+		line: LintMessage[];
+		start: LintMessage[];
+		end: LintMessage[];
+	}> = {};
+	const addMessage = (
+		key: string | number,
+		type: 'line' | 'start' | 'end',
+		message: LintMessage,
+	) => {
+		if (!groupedByLine[key]) {
+			groupedByLine[key] = {
+				line: [],
+				start: [],
+				end: [],
+			};
+		}
+		groupedByLine[key][type].push(message);
+	};
 
-		const [message] = lineGroup;
+	for (const message of processMessages) {
 		const reportedIndex = sourceCode.getIndexFromLoc({
 			line: message.line,
 			column: message.column - 1,
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
-		if (!reportedNode) {
-			continue;
-		}
+		if (reportedNode) {
+			addMessage(message.line, 'line', message);
+		} else {
+			// Vue.js template
+			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
+			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
 
+			if (templateNode) {
+				addMessage(templateNode.loc.start.line, 'start', message);
+				addMessage(templateNode.loc.end.line + 1, 'end', message);
+			}
+		}
+	}
+
+	const getLineComment = (
+		message: LintMessage,
+	): string => {
 		let blameData: GitBlame | undefined;
 		const comment = interpolateString(
 			commentTemplate,
 			{
-				'eslint-disable': `${ruleOptions.disableDirective} ${rulesToDisable}`,
 				get blame() {
 					if (filename && !blameData) {
 						blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
 					}
 					return blameData;
 				},
+				// TODO: codeowners
 			},
 			(_match, key) => {
 				throw new Error(`Can't find key: ${key}`);
 			},
 		);
 
-		const lineStart = sourceCode.getIndexFromLoc({
-			line: message.line,
+		return comment;
+	};
+
+	for (const key in groupedByLine) {
+		if (!Object.hasOwn(groupedByLine, key)) {
+			continue;
+		}
+
+		const groupedMessages = groupedByLine[key];
+		const comments = [];
+		if (groupedMessages.line.length > 0) {
+			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
+			comments.push(`${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])}`);
+		}
+		if (groupedMessages.start.length > 0) {
+			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
+			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.start[0])} -->`);
+		}
+		if (groupedMessages.end.length > 0) {
+			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
+			comments.push(`<!-- eslint-enable ${rulesToDisable} -->`);
+		}
+
+		const lineStartIndex = sourceCode.getIndexFromLoc({
+			line: Number(key),
 			column: 0,
 		});
 
+		const comment = comments.join('\n');
 		messages.push({
 			ruleId,
 			severity: ruleSeverity,
-			message: `Suppressing errors: ${rulesToDisable}`,
-			line: message.line,
-			column: message.column,
+			message: 'Suppressing errors',
+			line: 0,
+			column: 0,
 			fix: (
-				ruleOptions.insertDisableComment === 'above-line'
-					? insertIgnoreAboveLine(
+				(
+					ruleOptions.insertDisableComment === 'above-line'
+					|| groupedMessages.start.length > 0
+					|| groupedMessages.end.length > 0
+				)
+					? insertCommentAboveLine(
 						code,
-						lineStart,
+						lineStartIndex,
 						comment,
 					)
-					: insertIgnoreSameLine(
+					: insertCommentSameLine(
 						code,
-						lineStart,
+						lineStartIndex,
 						comment,
 					)
 			),
 		});
-
-		// In practice, ESLint runs multiple times so the suppressed rules
-		// don't need to be removed
 	}
 
 	return messages;

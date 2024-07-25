@@ -19,22 +19,3 @@ export const getSeverity = (
 		}
 	}
 };
-
-export const groupMessagesByLine = (
-	messages: Linter.LintMessage[],
-) => {
-	const groupedByLine: Record<number, Linter.LintMessage[]> = {};
-	for (const message of messages) {
-		if (!groupedByLine[message.line]) {
-			groupedByLine[message.line] = [];
-		}
-
-		// Don't add duplicate rules to the same line
-		const lineMessages = groupedByLine[message.line];
-		const ruleExists = lineMessages.some(({ ruleId }) => ruleId === message.ruleId);
-		if (!ruleExists) {
-			lineMessages.push(message);
-		}
-	}
-	return Object.values(groupedByLine);
-};

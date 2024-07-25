@@ -1,5 +1,6 @@
 import { type Rule } from 'eslint';
 import './fix-later.js';
+import type { SourceLocation } from 'estree';
 import { setRuleUsage, normalizeOptions } from './rule-meta.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { escapeRegExp } from './utils/escape-regexp.js';
@@ -36,14 +37,12 @@ export const fixLater = {
 		const options = normalizeOptions(context.options[0]);
 		setRuleUsage(context.id, options);
 
-		const descriptionDelimiter = '--';
+		const descriptionDelimiter = ' -- ';
 
 		const wildCard = Math.random().toString(36).slice(2);
 		const template = interpolateString(
 			options.commentTemplate,
-			{
-				'eslint-disable': `${options.disableDirective} ${wildCard}`,
-			},
+			{},
 			() => wildCard,
 		);
 		const suppressCommentPattern = new RegExp(`^${escapeRegExp(template).replaceAll(wildCard, '.+?')}$`);
@@ -52,26 +51,45 @@ export const fixLater = {
 		const sourceCode = context.sourceCode ?? context.getSourceCode();
 		const comments = sourceCode.getAllComments();
 
-		for (const comment of comments) {
-			// comment.value doesn't contain the syntax of the comment
-			const commentString = sourceCode.text.slice(comment.range![0], comment.range![1]);
-
-			if (!suppressCommentPattern.test(commentString)) {
-				continue;
+		const reportCommentDescription = (
+			commentString: string,
+			commentLocation: SourceLocation,
+		) => {
+			const descriptionIndex = commentString.indexOf(descriptionDelimiter);
+			if (descriptionIndex === -1) {
+				return;
 			}
 
-			const descriptionIndex = commentString.indexOf(descriptionDelimiter);
-			const description = commentString.slice(
-				descriptionIndex + descriptionDelimiter.length,
-			).trim();
+			const description = commentString.slice(descriptionIndex + descriptionDelimiter.length);
+			if (!suppressCommentPattern.test(description)) {
+				return;
+			}
 
 			context.report({
-				loc: comment.loc!,
+				loc: commentLocation,
 				messageId: 'remindToFix',
 				data: {
 					description,
 				},
 			});
+		};
+
+		for (const comment of comments) {
+			// comment.value doesn't contain the syntax of the comment
+			const commentString = sourceCode.text.slice(comment.range![0] + 2, comment.range![1]).trim();
+			if (commentString.startsWith('eslint-disable-')) {
+				reportCommentDescription(commentString, comment.loc!);
+			}
+		}
+
+		const vueDocument = sourceCode.parserServices.getDocumentFragment?.();
+		if (vueDocument) {
+			for (const comment of vueDocument.comments) {
+				const commentText = comment.value.trim();
+				if (commentText.startsWith('eslint-disable')) {
+					reportCommentDescription(commentText, comment.loc);
+				}
+			}
 		}
 
 		return {};

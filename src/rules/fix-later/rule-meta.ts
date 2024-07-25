@@ -3,7 +3,7 @@ import { name } from '../../../package.json';
 type RuleOptions = {
 	includeWarnings: boolean;
 	insertDisableComment: 'above-line' | 'end-of-line';
-	disableDirective: 'eslint-disable-line' | 'eslint-disable-next-line';
+	disableDirective: '// eslint-disable-line' | '// eslint-disable-next-line';
 	commentTemplate: string;
 };
 
@@ -26,10 +26,10 @@ export const normalizeOptions = (
 		insertDisableComment,
 		disableDirective: (
 			insertDisableComment === 'above-line'
-				? 'eslint-disable-next-line'
-				: 'eslint-disable-line'
+				? '// eslint-disable-next-line'
+				: '// eslint-disable-line'
 		),
-		commentTemplate: `// {{ eslint-disable }} -- ${commentTemplate}`,
+		commentTemplate,
 	};
 };
 

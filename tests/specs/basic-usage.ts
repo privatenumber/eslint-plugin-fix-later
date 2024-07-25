@@ -1,4 +1,5 @@
 import { testSuite, expect } from 'manten';
+import outdent from 'outdent';
 import { eslint } from '../utils/eslint.js';
 
 export default testSuite(({ describe }, eslintPath: string) => {
@@ -246,6 +247,61 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				expect(result.errorCount).toBe(0);
 				expect(result.output).toBe('console.log() // eslint-disable-line no-console -- Fix later');
 			});
+		});
+
+		test('vue', async () => {
+			const result = await eslint(eslintPath, {
+				config: {
+					extends: 'plugin:vue/vue3-recommended',
+					rules: {
+						'vue/html-indent': 'off',
+						'fix-later/fix-later': ['error', { includeWarnings: true }],
+					},
+				},
+				code: {
+					name: 'FileA.vue',
+					content: outdent`
+					<template>
+						<template
+							v-text="asdf"
+							v-html="asdf"
+						>
+							{{ this.adf }}
+						</template>
+					</template>
+					`,
+				},
+				fix: true,
+			});
+
+			expect(result.messages).toMatchObject([
+				{
+					ruleId: 'fix-later/fix-later',
+					severity: 2,
+					message: '[REMINDER] Fix later',
+					line: 2,
+					column: 2,
+					endLine: 2,
+					endColumn: 96,
+				},
+			]);
+
+			expect(result.errorCount).toBe(1);
+			expect(result.output).toBe(
+				outdent`
+				<template>
+					<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
+					<template
+						v-text="asdf"
+						v-html="asdf"
+					>
+						<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
+						{{ adf }}
+					</template>
+				<!-- eslint-enable vue/no-child-content -->
+				</template>
+				`,
+			);
 		});
 	});
 });

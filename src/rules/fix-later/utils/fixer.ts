@@ -1,11 +1,12 @@
 import type { Rule } from 'eslint';
 
-export const insertIgnoreAboveLine = (
+export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
 	comment: string,
 ): Rule.Fix => {
-	const indentation = code.slice(lineStart).match(/^\s*/)![0];
+	// \s can include new lines which we don't want
+	const indentation = code.slice(lineStart).match(/^[\t ]*/)![0];
 
 	return {
 		range: [lineStart, lineStart],
@@ -13,7 +14,7 @@ export const insertIgnoreAboveLine = (
 	};
 };
 
-export const insertIgnoreSameLine = (
+export const insertCommentSameLine = (
 	code: string,
 	lineStart: number,
 	comment: string,
