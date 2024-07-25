@@ -1,24 +1,30 @@
+import type { AST } from 'vue-eslint-parser';
 
-const safeRequire = (id: string) => {
+const safeRequire = <Type>(id: string) => {
 	try {
-		return require(id);
+		return require(id) as Type;
 	} catch {
 		return null;
 	}
 };
 
+const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText'];
+
+/**
+ * Re-implementation of getNodeByRangeIndex
+ * https://github.com/eslint/eslint/blob/ab0ff2755d6950d7e7fb92944771c1c30f933e02/lib/languages/js/source-code/source-code.js#L707
+ */
 export const getVueElement = (
-	index,
-	rootNode,
-) => {
-	const vueEslintParser = safeRequire('vue-eslint-parser');
+	index: number,
+	rootNode: AST.Node,
+): AST.VElement | undefined => {
+	const vueEslintParser = safeRequire<typeof import('vue-eslint-parser')>('vue-eslint-parser');
 	if (!vueEslintParser) {
 		return;
 	}
 
-	let result = null;
+	let result: AST.Node | undefined = undefined;
 	let broken = false;
-	const disallowedTypes = ['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText'];
 	vueEslintParser.AST.traverseNodes(rootNode, {
 		enterNode(node) {
 			if (broken) {

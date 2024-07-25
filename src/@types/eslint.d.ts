@@ -1,4 +1,5 @@
-import { SourceCode } from 'eslint';
+import type { SourceCode } from 'eslint';
+import type { AST } from 'vue-eslint-parser';
 
 declare module 'eslint' {
 
@@ -17,5 +18,12 @@ declare module 'eslint' {
 			config: Linter.Config,
 			options: Linter.FixOptions,
 		): LintMessage[];
+	}
+
+
+	interface SourceCode {
+		parserServices: {
+			getDocumentFragment?: () => AST.VDocumentFragment;
+		};
 	}
 }
