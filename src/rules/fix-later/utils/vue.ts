@@ -18,7 +18,7 @@ const disallowedTypes = new Set(['VAttribute', 'VIdentifier', 'VExpressionContai
 export const getVueElement = (
 	index: number,
 	rootNode: AST.Node,
-): AST.VElement | undefined => {
+): AST.Node | undefined => {
 	const vueEslintParser = safeRequire<typeof import('vue-eslint-parser')>('vue-eslint-parser');
 	if (!vueEslintParser) {
 		return;

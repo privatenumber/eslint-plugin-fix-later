@@ -61,6 +61,7 @@
 		"outdent": "^0.8.0",
 		"pkgroll": "^2.4.1",
 		"tsx": "^4.16.2",
-		"typescript": "^5.5.3"
+		"typescript": "^5.5.3",
+		"vue-eslint-parser": "^9.4.3"
 	}
 }
