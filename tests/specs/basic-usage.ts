@@ -1,4 +1,5 @@
 import { testSuite, expect } from 'manten';
+import outdent from 'outdent';
 import { eslint } from '../utils/eslint.js';
 
 export default testSuite(({ describe }, eslintPath: string) => {
@@ -150,55 +151,55 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 			// Added in ESLint v8.8.0
 			// https://github.com/eslint/eslint/commit/5d60812d440762dff72420714273c714c4c5d074
-			// if ('suppressedMessages' in result) {
-			// 	expect(result.suppressedMessages).toMatchObject([
-			// 		{
-			// 			ruleId: 'no-undef',
-			// 			severity: 2,
-			// 			message: "'asdf' is not defined.",
-			// 			line: 1,
-			// 			column: 1,
-			// 			nodeType: 'Identifier',
-			// 			messageId: 'undef',
-			// 			endLine: 1,
-			// 			endColumn: 5,
-			// 			suppressions: [{
-			// 				kind: 'directive',
-			// 				justification: 'Fix later',
-			// 			}],
-			// 		},
-			// 		{
-			// 			ruleId: 'no-console',
-			// 			severity: 2,
-			// 			message: 'Unexpected console statement.',
-			// 			line: 1,
-			// 			column: 6,
-			// 			nodeType: 'MemberExpression',
-			// 			messageId: 'unexpected',
-			// 			endLine: 1,
-			// 			endColumn: 17,
-			// 			suppressions: [{
-			// 				kind: 'directive',
-			// 				justification: 'Fix later',
-			// 			}],
-			// 		},
-			// 		{
-			// 			ruleId: 'no-undef',
-			// 			severity: 2,
-			// 			message: "'console' is not defined.",
-			// 			line: 1,
-			// 			column: 6,
-			// 			nodeType: 'Identifier',
-			// 			messageId: 'undef',
-			// 			endLine: 1,
-			// 			endColumn: 13,
-			// 			suppressions: [{
-			// 				kind: 'directive',
-			// 				justification: 'Fix later',
-			// 			}],
-			// 		},
-			// 	]);
-			// }
+			if ('suppressedMessages' in result) {
+				expect(result.suppressedMessages).toMatchObject([
+					{
+						ruleId: 'no-undef',
+						severity: 2,
+						message: "'asdf' is not defined.",
+						line: 1,
+						column: 1,
+						nodeType: 'Identifier',
+						messageId: 'undef',
+						endLine: 1,
+						endColumn: 5,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+					{
+						ruleId: 'no-console',
+						severity: 2,
+						message: 'Unexpected console statement.',
+						line: 1,
+						column: 6,
+						nodeType: 'MemberExpression',
+						messageId: 'unexpected',
+						endLine: 1,
+						endColumn: 17,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+					{
+						ruleId: 'no-undef',
+						severity: 2,
+						message: "'console' is not defined.",
+						line: 1,
+						column: 6,
+						nodeType: 'Identifier',
+						messageId: 'undef',
+						endLine: 1,
+						endColumn: 13,
+						suppressions: [{
+							kind: 'directive',
+							justification: 'Fix later',
+						}],
+					},
+				]);
+			}
 
 			expect(result.output).toBe(
 				'asdf(console.log()) // eslint-disable-line no-undef, no-console -- Fix later',
@@ -259,7 +260,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				},
 				code: {
 					name: 'FileA.vue',
-					content: `
+					content: outdent`
 					<template>
 						<template
 							v-text="asdf"
@@ -273,12 +274,23 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				fix: true,
 			});
 
-			console.log(result);
-			console.log(result.output);
-			// expect(result.warningCount).toBe(1);
-			// expect(result.errorCount).toBe(0);
-
-			// expect(result.output).toBeUndefined();
+			expect(result.warningCount).toBe(0);
+			expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(
+				outdent`
+				<template>
+					<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -->
+					<template
+						v-text="asdf"
+						v-html="asdf"
+					>
+						<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
+						{{ adf }}
+					</template>
+				<!-- eslint-enable vue/no-child-content -->
+				</template>
+				`,
+			);
 		});
 	});
 });

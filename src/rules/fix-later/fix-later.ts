@@ -13,6 +13,19 @@ type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
+
+const getRuleIds = (
+	lintMessages: LintMessage[],
+) => {
+	const ruleIds: string[] = [];
+	for (const message of lintMessages) {
+		if (message.ruleId && !ruleIds.includes(message.ruleId)) {
+			ruleIds.push(message.ruleId);
+		}
+	}
+	return ruleIds;
+};
+
 const suppressFileErrors = (
 	code: string,
 	sourceCode: SourceCode,
@@ -120,10 +133,9 @@ const suppressFileErrors = (
 	}
 
 	const getLineComment = (
-		// lineStartIndex: number,
 		messages: LintMessage[],
 	): string => {
-		const rulesToDisable = Array.from(new Set(messages.map(rule => rule.ruleId))).join(', ');
+		const rulesToDisable = getRuleIds(messages).join(', ');
 		const [message] = messages;
 
 		let blameData: GitBlame | undefined;
@@ -143,30 +155,27 @@ const suppressFileErrors = (
 		);
 
 		return comment;
-	}
+	};
 
 	for (const key in groupedByLine) {
 		const groupedMessages = groupedByLine[key];
-
-		const lineNumber = Number(key);
-		const lineStartIndex = sourceCode.getIndexFromLoc({
-			line: lineNumber,
-			column: 0,
-		});
-
 		const comments = [];
 		if (groupedMessages.line.length > 0) {
 			comments.push(getLineComment(groupedMessages.line));
 		}
-
 		if (groupedMessages.start.length > 0) {
-			const rulesToDisable = Array.from(new Set(groupedMessages.start.map(rule => rule.ruleId))).join(', ');
+			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
 			comments.push(`<!-- eslint-disable ${rulesToDisable} -->`);
 		}
 		if (groupedMessages.end.length > 0) {
-			const rulesToDisable = Array.from(new Set(groupedMessages.end.map(rule => rule.ruleId))).join(', ');
+			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
 			comments.push(`<!-- eslint-enable ${rulesToDisable} -->`);
 		}
+
+		const lineStartIndex = sourceCode.getIndexFromLoc({
+			line: Number(key),
+			column: 0,
+		});
 
 		const comment = comments.join('\n');
 		messages.push({
@@ -176,7 +185,11 @@ const suppressFileErrors = (
 			line: 0,
 			column: 0,
 			fix: (
-				(ruleOptions.insertDisableComment === 'above-line' || groupedMessages.start.length > 0 || groupedMessages.end.length > 0)
+				(
+					ruleOptions.insertDisableComment === 'above-line'
+					|| groupedMessages.start.length > 0
+					|| groupedMessages.end.length > 0
+				)
 					? insertCommentAboveLine(
 						code,
 						lineStartIndex,
