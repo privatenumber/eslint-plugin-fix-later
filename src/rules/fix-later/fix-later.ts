@@ -79,6 +79,10 @@ const suppressFileErrors = (
 		return messages;
 	}
 
+	if (processMessages.length === 0) {
+		return messages;
+	}
+
 	const { commentTemplate } = ruleOptions;
 
 	// The number is the line where the disable comment should be inserted
