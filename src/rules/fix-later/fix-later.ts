@@ -164,7 +164,7 @@ const suppressFileErrors = (
 		}
 		if (groupedMessages.start.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
-			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])} -->`);
+			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.start[0])} -->`);
 		}
 		if (groupedMessages.end.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
