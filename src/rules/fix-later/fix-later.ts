@@ -5,6 +5,7 @@ import {
 	insertCommentSameLine,
 } from './utils/fixer.js';
 import { gitBlame, type GitBlame } from './utils/git.js';
+import { getCodeOwner } from './utils/codeowner.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElement } from './utils/vue.js';
@@ -144,7 +145,11 @@ const suppressFileErrors = (
 					}
 					return blameData;
 				},
-				// TODO: codeowners
+				get codeowner() {
+					if (filename) {
+						return getCodeOwner(filename);
+					}
+				},
 			},
 			(_match, key) => {
 				throw new Error(`Can't find key: ${key}`);

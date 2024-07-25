@@ -124,7 +124,7 @@ The template for the `eslint-disable` comment. The `{{ eslint-disable }}` handle
 
 #### Git blame
 
-You can also `git blame` the errorneous code and leave a TODO for the author:
+You can get the `git blame` author of the errorneous code:
 ```
 Please fix: {{ blame.author }} <{{ blame.author-mail }}>
 ```
@@ -147,4 +147,12 @@ All properties from `git blame` are available:
     "committer-time": "1708498454",
     "committer-tz": "+0100"
 }
+```
+
+#### CODEOWNER
+
+You can get the [CODEOWNER](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) of the file:
+
+```
+Please fix: {{ codeowner }}
 ```
