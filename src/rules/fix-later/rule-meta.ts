@@ -29,7 +29,7 @@ export const normalizeOptions = (
 				? 'eslint-disable-next-line'
 				: 'eslint-disable-line'
 		),
-		commentTemplate: '// {{ eslint-disable }} -- ' + commentTemplate,
+		commentTemplate: `// {{ eslint-disable }} -- ${commentTemplate}`,
 	};
 };
 
