@@ -3,6 +3,7 @@ import './fix-later.js';
 import { setRuleUsage, normalizeOptions } from './rule-meta.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { escapeRegExp } from './utils/escape-regexp.js';
+import type { SourceLocation } from 'estree';
 
 export const fixLater = {
 	meta: {
@@ -44,7 +45,7 @@ export const fixLater = {
 
 		const reportCommentDescription = (
 			commentString: string,
-			commentLocation: unknown
+			commentLocation: SourceLocation,
 		) => {
 			const descriptionIndex = commentString.indexOf(descriptionDelimiter);
 			if (descriptionIndex === -1) {
@@ -67,7 +68,7 @@ export const fixLater = {
 			// comment.value doesn't contain the syntax of the comment
 			const commentString = sourceCode.text.slice(comment.range![0] + 2, comment.range![1]).trim();
 			if (commentString.startsWith('eslint-disable-')) {
-				reportCommentDescription(commentString, comment.loc);
+				reportCommentDescription(commentString, comment.loc!);
 			}
 		}
 
