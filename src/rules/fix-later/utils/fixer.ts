@@ -1,12 +1,17 @@
 import type { Rule } from 'eslint';
 
+/**
+ * Regex to only match a sequence of tabs or spaces (not both)
+ * \s is not used because it can include new lines which we don't want
+ */
+const tabOrSpaces = /^([\t ]?)\1*/;
+
 export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
 	comment: string,
 ): Rule.Fix => {
-	// \s can include new lines which we don't want
-	const indentation = code.slice(lineStart).match(/^[\t ]*/)![0];
+	const indentation = code.slice(lineStart).match(tabOrSpaces)![0];
 
 	return {
 		range: [lineStart, lineStart],

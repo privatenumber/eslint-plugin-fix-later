@@ -249,6 +249,38 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
+		test('inherits indentation without mixing tabs + spaces', async () => {
+			const content = outdent`
+			if (true) {
+				 console.log()
+			}
+			`;
+			expect(content).toMatch('\n\t console');
+			const result = await eslint(eslintPath, {
+				config: {
+					rules: {
+						'fix-later/fix-later': ['warn', {
+							insertDisableComment: 'above-line',
+						}],
+						'no-mixed-spaces-and-tabs': 'error',
+					},
+				},
+				code: {
+					content,
+				},
+				fix: true,
+			});
+
+			expect(result.output).toBe(
+				outdent`
+				if (true) {
+					// eslint-disable-next-line no-mixed-spaces-and-tabs -- Fix later
+					 console.log()
+				}
+				`,
+			);
+		});
+
 		test('vue', async () => {
 			const result = await eslint(eslintPath, {
 				config: {
