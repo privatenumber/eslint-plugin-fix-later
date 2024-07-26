@@ -281,6 +281,71 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			);
 		});
 
+		describe('merges eslint-disable comment if exists', ({ test }) => {
+			test('above-line', async () => {
+				const content = outdent`
+				if (true) {
+					// eslint-disable-next-line no-mixed-spaces-and-tabs
+					 console.log()
+				}
+				`;
+				expect(content).toMatch('\n\t console');
+				const result = await eslint(eslintPath, {
+					config: {
+						rules: {
+							'fix-later/fix-later': ['warn', {
+								insertDisableComment: 'above-line',
+							}],
+							'no-mixed-spaces-and-tabs': 'error',
+							'no-console': 'error',
+						},
+					},
+					code: {
+						content,
+					},
+					fix: true,
+				});
+
+				expect(result.output).toBe(
+					outdent`
+					if (true) {
+						// eslint-disable-next-line no-mixed-spaces-and-tabs, no-console -- Fix later
+						 console.log()
+					}
+					`,
+				);
+			});
+
+			test('same-line', async () => {
+				const content = outdent`
+				if (true) {
+					 console.log() /* eslint-disable-line no-mixed-spaces-and-tabs */
+				}
+				`;
+				const result = await eslint(eslintPath, {
+					config: {
+						rules: {
+							'fix-later/fix-later': 'warn',
+							'no-mixed-spaces-and-tabs': 'error',
+							'no-console': 'error',
+						},
+					},
+					code: {
+						content,
+					},
+					fix: true,
+				});
+
+				expect(result.output).toBe(
+					outdent`
+					if (true) {
+						 console.log() /* eslint-disable-line no-mixed-spaces-and-tabs, no-console -- Fix later */
+					}
+					`,
+				);
+			});
+		});
+
 		test('vue', async () => {
 			const result = await eslint(eslintPath, {
 				config: {
