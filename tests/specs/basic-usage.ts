@@ -249,6 +249,41 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
+		if (eslintPath.includes('eslint8')) {
+			test('apply fix-only with --fix-type=directive', async () => {
+				const content = outdent`
+				var foo = () => 0
+				`;
+				const result = await eslint(eslintPath, {
+					config: {
+						parserOptions: {
+							ecmaVersion: 2021,
+						},
+						rules: {
+							'fix-later/fix-later': ['warn', {
+								insertDisableComment: 'above-line',
+							}],
+							'arrow-body-style': ['error', 'always'],
+						},
+					},
+					code: {
+						content,
+					},
+					fix: true,
+
+					// Only applies fix-later and doesn't auto-fix the arrow-body-style
+					fixType: 'directive',
+				});
+
+				expect(result.output).toBe(
+					outdent`
+					// eslint-disable-next-line arrow-body-style -- Fix later
+					var foo = () => 0
+					`,
+				);
+			});
+		}
+
 		test('inherits indentation without mixing tabs + spaces', async () => {
 			const content = outdent`
 			if (true) {

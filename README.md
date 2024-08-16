@@ -96,6 +96,10 @@ In your ESLint config:
 
 	This approach prevents errors from slipping through while accommodating "fix later" notes.
 
+### Suppressing auto-fixable errors (ESLint v8+)
+
+Pass in the [`--fix-type=directive`](https://eslint.org/docs/latest/use/command-line-interface#--fix-type) flag to ESLint to only apply the fix-later auto-fix.
+
 ## Options
 
 ### includeWarnings

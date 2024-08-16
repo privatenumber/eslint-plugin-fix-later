@@ -31,7 +31,6 @@ export const fixLater = {
 				additionalProperties: false,
 			},
 		],
-		type: 'problem',
 	},
 	create: (context) => {
 		const options = normalizeOptions(context.options[0]);
