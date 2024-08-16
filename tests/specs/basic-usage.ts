@@ -435,5 +435,60 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				`,
 			);
 		});
+
+		test('vue 2', async () => {
+			const result = await eslint(eslintPath, {
+				config: {
+					extends: 'plugin:vue/base',
+					rules: {
+						"vue/no-deprecated-slot-attribute":"error",
+						'fix-later/fix-later': ['error'],
+					},
+				},
+				code: {
+					name: 'FileA.vue',
+					content: outdent`
+					<template>
+						<comp>
+							<img slot="media">
+							<img slot="media">
+						</comp>
+					</template>
+					`,
+				},
+				fix: true,
+				fixType: 'directive',
+			});
+
+			console.log(result);
+			// expect(result.messages).toMatchObject([
+			// 	{
+			// 		ruleId: 'fix-later/fix-later',
+			// 		severity: 2,
+			// 		message: '[REMINDER] Fix later',
+			// 		line: 2,
+			// 		column: 2,
+			// 		endLine: 2,
+			// 		endColumn: 96,
+			// 	},
+			// ]);
+
+			// expect(result.errorCount).toBe(1);
+			// expect(result.output).toBe(
+			// 	outdent`
+			// 	<template>
+			// 		<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
+			// 		<template
+			// 			v-text="asdf"
+			// 			v-html="asdf"
+			// 		>
+			// 			<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
+			// 			{{ adf }}
+			// 		</template>
+			// 	<!-- eslint-enable vue/no-child-content -->
+			// 	</template>
+			// 	`,
+			// );
+		});
 	});
 });
