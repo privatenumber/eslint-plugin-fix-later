@@ -31,7 +31,9 @@ export const fixLater = {
 				additionalProperties: false,
 			},
 		],
-		type: 'problem',
+
+		// @ts-expect-error -- special type
+		type: 'directive',
 	},
 	create: (context) => {
 		const options = normalizeOptions(context.options[0]);

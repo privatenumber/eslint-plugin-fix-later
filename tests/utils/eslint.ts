@@ -15,6 +15,7 @@ type Options = {
 	code: string | StdIn;
 	cwd?: string;
 	fix?: boolean;
+	fixType?: 'directive';
 };
 
 export const eslint = async (
@@ -24,6 +25,7 @@ export const eslint = async (
 		config: configRaw,
 		code,
 		fix,
+		fixType
 	}: Options,
 ) => {
 	await installSelfPackage(cwd);
@@ -45,6 +47,9 @@ export const eslint = async (
 
 	if (fix) {
 		eslintArgs.push('--fix-dry-run');
+		if (fixType) {
+			eslintArgs.push(`--fix-type=${fixType}`);
+		}
 	}
 
 	if (typeof code === 'object') {

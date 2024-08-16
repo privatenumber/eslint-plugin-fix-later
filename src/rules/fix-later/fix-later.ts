@@ -68,7 +68,12 @@ const suppressFileErrors = (
 
 	// If applying fix, only suppress errors that can't be fixed
 	if (fix) {
-		processMessages = processMessages.filter(message => !message.fix);
+		processMessages = processMessages.filter(message => (
+			!message.fix
+
+			// Filter that applies `--fix-type`
+			|| (typeof fix === 'function' && !fix(message))
+		));
 	} else {
 		const suppressableMessages = processMessages.filter(message => !message.fix);
 
