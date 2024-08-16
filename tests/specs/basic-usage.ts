@@ -270,11 +270,11 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						content,
 					},
 					fix: true,
-	
+
 					// Only applies fix-later and doesn't auto-fix the arrow-body-style
 					fixType: 'directive',
 				});
-	
+
 				expect(result.output).toBe(
 					outdent`
 					// eslint-disable-next-line arrow-body-style -- Fix later

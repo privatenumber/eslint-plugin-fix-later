@@ -25,7 +25,7 @@ export const eslint = async (
 		config: configRaw,
 		code,
 		fix,
-		fixType
+		fixType,
 	}: Options,
 ) => {
 	await installSelfPackage(cwd);
