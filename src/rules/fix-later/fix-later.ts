@@ -184,24 +184,32 @@ const suppressFileErrors = (
 			comments.push(`<!-- eslint-enable ${rulesToDisable} -->`);
 		}
 
+		const line = Number(key);
 		const lineStartIndex = sourceCode.getIndexFromLoc({
-			line: Number(key),
+			line,
 			column: 0,
 		});
 
 		const comment = comments.join('\n');
+		const insertCommentAbove = (
+			ruleOptions.insertDisableComment === 'above-line'
+			|| groupedMessages.start.length > 0
+			|| groupedMessages.end.length > 0
+		);
 		messages.push({
-			ruleId,
+			/**
+			 * Not specifiying a ruleId allows us to only apply this fix
+			 * when --fix-type=directive is passed in
+			 *
+			 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
+			 */
+			ruleId: null,
 			severity: ruleSeverity,
-			message: 'Suppressing errors',
-			line: 0,
+			message: `fix-later: insert eslint comment on L${line + (insertCommentAbove ? 1 : 0)}`,
+			line,
 			column: 0,
 			fix: (
-				(
-					ruleOptions.insertDisableComment === 'above-line'
-					|| groupedMessages.start.length > 0
-					|| groupedMessages.end.length > 0
-				)
+				insertCommentAbove
 					? insertCommentAboveLine(
 						code,
 						lineStartIndex,
