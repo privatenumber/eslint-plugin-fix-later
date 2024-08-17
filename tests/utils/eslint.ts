@@ -1,9 +1,9 @@
 import path from 'path';
 import { execaNode } from 'execa';
 import type { ESLint, Linter } from 'eslint';
-import { createFixture } from 'fs-fixture';
 import { name } from '../../package.json';
 import { installSelfPackage } from './install-self-package.js';
+import { createEslintConfig } from './create-eslint-config.js';
 
 type StdIn = {
 	name?: string;
@@ -28,39 +28,37 @@ export const eslint = async (
 		fixType,
 	}: Options,
 ) => {
-	await installSelfPackage(process.cwd());
+	await installSelfPackage(cwd);
 
-	const fixture = await createFixture({
-		node_modules: ({ symlink }) => symlink(path.resolve('./node_modules')),
-		'config.json': JSON.stringify({
-			root: true,
-			plugins: [
-				name,
-			],
-			...configRaw,
-		}),
+	await using config = await createEslintConfig({
+		root: true,
+		plugins: [
+			name,
+		],
+		...configRaw,
 	});
-
-	console.log(fixture);
 
 	const eslintArgs = [
 		'-c',
-		fixture.getPath('config.json'),
+		config.path,
 		'--no-eslintrc',
 		'--format=json',
 	];
 
 	if (fix) {
 		eslintArgs.push('--fix-dry-run');
+
 		if (fixType) {
-			eslintArgs.push(`--fix-type=${fixType}`);
+			eslintArgs.push('--fix-type', fixType);
 		}
 	}
 
 	if (typeof code === 'object') {
-		const filename = code.name || 'file.js';
-		await fixture.writeFile(filename, code.content);
-		eslintArgs.push(fixture.getPath(filename));
+		eslintArgs.push(
+			'--stdin',
+			'--stdin-filename',
+			code.name || 'file.js',
+		);
 	} else {
 		eslintArgs.push(code);
 	}

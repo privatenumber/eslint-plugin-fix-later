@@ -1,4 +1,4 @@
 export const eslintVersions = [
-	// 'eslint7',
+	'eslint7',
 	'eslint8',
 ];
