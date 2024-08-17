@@ -47,9 +47,8 @@ export const eslint = async (
 
 	if (fix) {
 		eslintArgs.push('--fix-dry-run');
-
 		if (fixType) {
-			eslintArgs.push('--fix-type', fixType);
+			eslintArgs.push(`--fix-type=${fixType}`);
 		}
 	}
 
