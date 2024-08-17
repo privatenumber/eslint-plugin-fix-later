@@ -10,7 +10,10 @@ export const installSelfPackage = async (
 	const packageInstallPath = path.join(cwd, 'node_modules', name);
 	const packageInstalled = await fs.lstat(packageInstallPath).then(() => true, () => false);
 	if (packageInstalled) {
-		return;
+		const symlinkedPath = await fs.readlink(packageInstallPath);
+		if (symlinkedPath === selfPackagePath) {
+			return;
+		}
 	}
 
 	await fs.mkdir(path.dirname(packageInstallPath), { recursive: true });
