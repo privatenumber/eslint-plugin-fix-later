@@ -175,13 +175,13 @@ const suppressFileErrors = (
 			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
 			comments.push(`${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])}`);
 		}
-		if (groupedMessages.start.length > 0) {
-			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
-			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.start[0])} -->`);
-		}
 		if (groupedMessages.end.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
 			comments.push(`<!-- eslint-enable ${rulesToDisable} -->`);
+		}
+		if (groupedMessages.start.length > 0) {
+			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
+			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.start[0])} -->`);
 		}
 
 		const line = Number(key);
