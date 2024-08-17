@@ -1,10 +1,9 @@
 import path from 'path';
 import { execaNode } from 'execa';
 import type { ESLint, Linter } from 'eslint';
+import { createFixture } from 'fs-fixture';
 import { name } from '../../package.json';
 import { installSelfPackage } from './install-self-package.js';
-import { createEslintConfig } from './create-eslint-config.js';
-import { createFixture } from 'fs-fixture';
 
 type StdIn = {
 	name?: string;
@@ -32,7 +31,7 @@ export const eslint = async (
 	await installSelfPackage(process.cwd());
 
 	const fixture = await createFixture({
-		'node_modules': ({ symlink }) => symlink(path.resolve(`./node_modules`)),
+		node_modules: ({ symlink }) => symlink(path.resolve('./node_modules')),
 		'config.json': JSON.stringify({
 			root: true,
 			plugins: [
