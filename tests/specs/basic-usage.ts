@@ -435,5 +435,48 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				`,
 			);
 		});
+
+		if (eslintPath.includes('eslint8')) {
+			test('consecutive errors', async () => {
+				const result = await eslint(eslintPath, {
+					config: {
+						extends: 'plugin:vue/base',
+						rules: {
+							'vue/no-deprecated-slot-attribute': 'error',
+							'fix-later/fix-later': 'error',
+						},
+					},
+					code: {
+						name: 'FileA.vue',
+						content: outdent`
+						<template>
+							<comp>
+								<img slot="media">
+								<img slot="media">
+							</comp>
+						</template>
+						`,
+					},
+					fix: true,
+					fixType: 'directive',
+				});
+
+				expect(result.errorCount).toBe(2);
+				expect(result.output).toBe(
+					outdent`
+					<template>
+						<comp>
+							<!-- eslint-disable vue/no-deprecated-slot-attribute -- Fix later -->
+							<img slot="media">
+							<!-- eslint-enable vue/no-deprecated-slot-attribute -->
+					<!-- eslint-disable vue/no-deprecated-slot-attribute -- Fix later -->
+							<img slot="media">
+						<!-- eslint-enable vue/no-deprecated-slot-attribute -->
+						</comp>
+					</template>
+					`,
+				);
+			});
+		}
 	});
 });
