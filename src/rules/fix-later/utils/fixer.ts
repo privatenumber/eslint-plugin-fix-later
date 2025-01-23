@@ -8,12 +8,12 @@ const tabOrSpaces = /^([\t ]?)\1*/;
 
 const getCommentIndex = (code: string) => {
 	const lineCommentIndex = code.indexOf('//');
-	if (lineCommentIndex > -1) {
+	if (lineCommentIndex !== -1) {
 		return lineCommentIndex;
 	}
 
 	const blockCommentIndex = code.indexOf('/*');
-	if (blockCommentIndex > -1) {
+	if (blockCommentIndex !== -1) {
 		return blockCommentIndex;
 	}
 	return -1;
@@ -23,12 +23,12 @@ const eslintDisableNextLine = 'eslint-disable-next-line';
 const eslintDisableSameLine = 'eslint-disable-line';
 const getDisableDirectiveIndex = (comment: string) => {
 	const nextLineIndex = comment.indexOf(eslintDisableNextLine);
-	if (nextLineIndex > -1) {
+	if (nextLineIndex !== -1) {
 		return nextLineIndex + eslintDisableNextLine.length + 1;
 	}
 
 	const sameLineIndex = comment.indexOf(eslintDisableSameLine);
-	if (sameLineIndex > -1) {
+	if (sameLineIndex !== -1) {
 		return sameLineIndex + eslintDisableSameLine.length + 1;
 	}
 	return -1;
@@ -48,7 +48,7 @@ const parseEslintDisableComment = (comment: string) => {
 	let commentContent = comment.slice(disableIndex);
 
 	const commentEnd = commentContent.indexOf('*/');
-	if (commentEnd > -1) {
+	if (commentEnd !== -1) {
 		commentContent = commentContent.slice(0, commentEnd);
 	}
 
@@ -80,7 +80,7 @@ export const insertCommentAboveLine = (
 
 	const codeBefore = code.slice(0, lineStart - 1);
 	const lastNewLine = codeBefore.lastIndexOf('\n');
-	if (lastNewLine > -1) {
+	if (lastNewLine !== -1) {
 		const lineBefore = codeBefore.slice(lastNewLine + 1);
 		const commentBefore = parseEslintDisableComment(lineBefore);
 

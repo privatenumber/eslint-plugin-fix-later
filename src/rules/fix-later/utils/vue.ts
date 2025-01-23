@@ -1,3 +1,4 @@
+import type VueEslintParser from 'vue-eslint-parser';
 import type { AST } from 'vue-eslint-parser';
 
 const safeRequire = <Type>(id: string) => {
@@ -19,7 +20,7 @@ export const getVueElement = (
 	index: number,
 	rootNode: AST.Node,
 ): AST.Node | undefined => {
-	const vueEslintParser = safeRequire<typeof import('vue-eslint-parser')>('vue-eslint-parser');
+	const vueEslintParser = safeRequire<typeof VueEslintParser>('vue-eslint-parser');
 	if (!vueEslintParser) {
 		return;
 	}

@@ -1,4 +1,4 @@
-import { type Rule } from 'eslint';
+import type { Rule } from 'eslint';
 import './fix-later.js';
 import type { SourceLocation } from 'estree';
 import { setRuleUsage, normalizeOptions } from './rule-meta.js';
