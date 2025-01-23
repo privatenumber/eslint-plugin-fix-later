@@ -15,7 +15,7 @@ const recommended = {
 	rules: {
 		'fix-later/fix-later': ['warn', {
 			insertDisableComment: 'above-line',
-			commentTemplate: 'Please fix: {{ codeowner }}',
+			commentTemplate: 'Please fix',
 		}],
 	},
 } satisfies Linter.Config;
