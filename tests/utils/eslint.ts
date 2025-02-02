@@ -5,6 +5,22 @@ import { createFixture } from 'fs-fixture';
 import { name } from '../../package.json';
 import { installSelfPackage } from './install-self-package.js';
 
+export const eslintRaw = (
+	eslintName: string,
+	eslintArgs: string[],
+	cwd: string,
+) => execaNode(
+	path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
+	eslintArgs,
+	{
+		cwd,
+		all: true,
+		stdio: 'pipe',
+		reject: false,
+		nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
+	},
+);
+
 type StdIn = {
 	name?: string;
 	content: string;
@@ -18,7 +34,6 @@ type Options = {
 	fixType?: 'directive';
 };
 
-const processCwd = process.cwd();
 const nodeModulesPath = path.resolve('./node_modules');
 
 export const eslint = async (
@@ -31,7 +46,7 @@ export const eslint = async (
 		fixType,
 	}: Options,
 ) => {
-	await installSelfPackage(processCwd);
+	await installSelfPackage();
 
 	await using fixture = await createFixture({
 		node_modules: ({ symlink }) => symlink(nodeModulesPath),
@@ -96,16 +111,10 @@ export const eslint = async (
 		eslintArgs.push(code);
 	}
 
-	const eslintProcess = execaNode(
-		path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
+	const eslintProcess = eslintRaw(
+		eslintName,
 		eslintArgs,
-		{
-			cwd: cwd ?? fixture.path,
-			all: true,
-			stdio: 'pipe',
-			reject: false,
-			nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
-		},
+		cwd ?? fixture.path,
 	);
 
 	if (typeof code === 'object') {
