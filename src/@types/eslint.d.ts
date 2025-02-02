@@ -1,5 +1,5 @@
 import type { AST } from 'vue-eslint-parser';
-import { ConfigArray } from '@eslint/config-array';
+import type { ConfigArray } from '@eslint/config-array';
 
 declare module 'eslint' {
 	class FlatConfigArray extends ConfigArray {}

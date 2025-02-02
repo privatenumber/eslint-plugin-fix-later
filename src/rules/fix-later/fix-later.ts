@@ -31,7 +31,10 @@ const suppressFileErrors = (
 	sourceCode: SourceCode,
 	extractedConfig: Linter.Config,
 	messages: LintMessage[],
-	{ fix, filename }: Linter.FixOptions,
+	{ fix, filename }: {
+		filename?: string;
+		fix?: boolean | ((message: LintMessage) => boolean);
+	},
 ) => {
 	if (!ruleId || !ruleOptions) {
 		return messages;
