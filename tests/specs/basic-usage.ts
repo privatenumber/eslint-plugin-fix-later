@@ -1,11 +1,11 @@
 import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
-import { eslint } from '../utils/eslint.js';
+import { eslintWithCode } from '../utils/eslint.js';
 
 export default testSuite(({ describe }, eslintPath: string) => {
 	describe('basic usage', async ({ describe, test }) => {
 		test('off', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'off',
@@ -24,7 +24,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('ignores auto-fixable rules & no options', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'error',
@@ -44,7 +44,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('inherits severity', ({ test }) => {
 			test('"warning"', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 'warn',
@@ -83,7 +83,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('1', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 1,
@@ -123,7 +123,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('handles multiple rules', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'warn',
@@ -208,7 +208,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('includeWarnings', ({ test }) => {
 			test('false', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn'],
@@ -228,7 +228,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('true', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -254,7 +254,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				const content = outdent`
 				var foo = () => 0
 				`;
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						parserOptions: {
 							ecmaVersion: 2021,
@@ -291,7 +291,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			}
 			`;
 			expect(content).toMatch('\n\t console');
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {
@@ -325,7 +325,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				}
 				`;
 				expect(content).toMatch('\n\t console');
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -357,7 +357,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 					 console.log() /* eslint-disable-line no-mixed-spaces-and-tabs */
 				}
 				`;
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 'warn',
@@ -382,7 +382,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('vue', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					extends: 'plugin:vue/vue3-recommended',
 					rules: {
@@ -438,7 +438,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		if (eslintPath.includes('eslint8')) {
 			test('consecutive errors', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						extends: 'plugin:vue/base',
 						rules: {

@@ -5,26 +5,37 @@ import { createFixture } from 'fs-fixture';
 import { installSelfPackage } from './install-self-package.js';
 import { addConfig } from './eslint-config.js';
 
-export const eslintRaw = (
+export const eslint = async (
 	eslintName: string,
 	eslintArgs: string[],
 	cwd: string,
-) => execaNode(
-	path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
-	[
-		'--format=json',
-		...eslintArgs,
-	],
-	{
-		cwd,
-		all: true,
-		stdio: 'pipe',
-		reject: false,
-		nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
-	},
-);
+) => {
+	const processResult = await execaNode(
+		path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
+		[
+			'--format=json',
+			...eslintArgs,
+		],
+		{
+			cwd,
+			all: true,
+			stdio: 'pipe',
+			reject: false,
+			nodeOptions: ['--import', 'alias-imports', '-C', eslintName],
+		},
+	);
 
-// TODO: Add string type
+	let results: ESLint.LintResult[];
+	try {
+		results = JSON.parse(processResult.all!) as ESLint.LintResult[];
+	} catch {
+		throw processResult;
+	}
+
+	const [firstFile] = results;
+	return firstFile;
+};
+
 type Code = {
 	name?: string;
 	content: string;
@@ -39,7 +50,7 @@ type Options = {
 	fix?: boolean;
 	fixType?: 'directive';
 };
-export const eslint = async (
+export const eslintWithCode = async (
 	eslintName: string,
 	{
 		config: configRaw,
@@ -70,19 +81,9 @@ export const eslint = async (
 	await fixture.writeFile(filename, code.content);
 	eslintArgs.push(fixture.getPath(filename));
 
-	const processResult = await eslintRaw(
+	return await eslint(
 		eslintName,
 		eslintArgs,
 		fixture.path,
 	);
-
-	let results: ESLint.LintResult[];
-	try {
-		results = JSON.parse(processResult.all!) as ESLint.LintResult[];
-	} catch {
-		throw processResult;
-	}
-
-	const [firstFile] = results;
-	return firstFile;
 };

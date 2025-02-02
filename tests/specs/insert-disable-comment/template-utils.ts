@@ -1,9 +1,8 @@
 import path from 'path';
 import { testSuite, expect } from 'manten';
-import outdent from 'outdent';
 import { createFixture } from 'fs-fixture';
 import { execa } from 'execa';
-import { eslint, eslintRaw } from '../../utils/eslint.js';
+import { eslint } from '../../utils/eslint.js';
 import { addConfig } from '../../utils/eslint-config.js';
 
 export default testSuite(({ describe }, eslintName: string) => {
@@ -14,7 +13,7 @@ export default testSuite(({ describe }, eslintName: string) => {
 			'.github/CODEOWNERS': 'file.js @johndoe',
 		});
 
-		const eslintArgs = await addConfig(
+		let eslintArgs = await addConfig(
 			eslintName,
 			fixture,
 			{
@@ -27,136 +26,98 @@ export default testSuite(({ describe }, eslintName: string) => {
 			},
 		);
 
-		// onFinish(() => fixture.rm());
+		onFinish(() => fixture.rm());
 
-		/*
-		eslint(eslintName, {
-			config: {
-				rules: {
-					'fix-later/fix-later': ['error', {
-						commentTemplate: '{{ blame.author }} {{ blame.author-mail }}',
-					}],
-					'no-console': 'error',
-				},
-			},
-			code: {
-				content: 'console.log()',
-			},
-			cwd: fixture.path,
-			fix: true,
-		})
-		*/
 		await describe('git blame', async ({ test }) => {
 			await test('No git project', async () => {
-				const result = await eslintRaw(eslintName, [...eslintArgs, '--fix-dry-run', 'file.js'], fixture.path);
-
-				console.log({ result });
-				// await expect(
-				// 	() => eslintRaw(eslintName, [...eslintArgs, 'file.js'], fixture.path),
-				// ).rejects.toThrow('not a git repository');
+				await expect(() => eslint(
+					eslintName,
+					[...eslintArgs, '--fix-dry-run', 'file.js'],
+					fixture.path,
+				)).rejects.toThrow('not a git repository');
 			});
 
-			// // Setup git
-			// await execa('git', ['init'], { cwd: fixture.path });
-			// await execa('git', ['config', 'user.name', 'John Doe'], { cwd: fixture.path });
-			// await execa('git', ['config', 'user.email', 'john@doe.org'], { cwd: fixture.path });
+			// Setup git
+			await execa('git', ['init'], { cwd: fixture.path });
+			await execa('git', ['config', 'user.name', 'John Doe'], { cwd: fixture.path });
+			await execa('git', ['config', 'user.email', 'john@doe.org'], { cwd: fixture.path });
 
-			// await execa('git', ['commit', '--allow-empty', '-m', 'test'], { cwd: fixture.path });
+			await execa('git', ['commit', '--allow-empty', '-m', 'test'], { cwd: fixture.path });
 
-			// await test('Unchecked file', async () => {
-			// 	await expect(
-			// 		() => eslint(eslintName, {
-			// 			config: {
-			// 				rules: {
-			// 					'fix-later/fix-later': ['error', {
-			// 						commentTemplate: '{{ blame.author }} {{ blame.author-mail }}',
-			// 					}],
-			// 					'no-console': 'error',
-			// 				},
-			// 			},
-			// 			code: 'file.js',
-			// 			cwd: fixture.path,
-			// 			fix: true,
-			// 		}),
-			// 	).rejects.toThrow('no such path \'file.js\' in HEAD');
-			// });
+			await test('Unchecked file', async () => {
+				await expect(() => eslint(
+					eslintName,
+					[...eslintArgs, '--fix-dry-run', 'file.js'],
+					fixture.path,
+				)).rejects.toThrow('no such path \'file.js\' in HEAD');
+			});
 
-			// // Add file
-			// await execa('git', ['add', 'file.js'], { cwd: fixture.path });
+			// Add file
+			await execa('git', ['add', 'file.js'], { cwd: fixture.path });
 
-			// await test('Uncommitted file - gets current git user', async () => {
-			// 	const result = await eslint(eslintName, {
-			// 		config: {
-			// 			rules: {
-			// 				'fix-later/fix-later': ['warn', {
-			// 					commentTemplate: '{{ blame.author }} <{{ blame.author-mail }}>',
-			// 				}],
-			// 				'no-console': 'error',
-			// 			},
-			// 		},
-			// 		code: 'file.js',
-			// 		cwd: fixture.path,
-			// 		fix: true,
-			// 	});
+			eslintArgs = await addConfig(
+				eslintName,
+				fixture,
+				{
+					rules: {
+						'fix-later/fix-later': ['warn', {
+							commentTemplate: '{{ blame.author }} <{{ blame.author-mail }}>',
+						}],
+						'no-console': 'error',
+					},
+				},
+			);
 
-			// 	expect(result.warningCount).toBe(1);
-			// 	expect(result.errorCount).toBe(0);
-			// 	expect(result.output).toBe(
-			// 		outdent`
-			// 		console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>
-			// 		`,
-			// 	);
-			// });
+			await test('Uncommitted file - gets current git user', async () => {
+				const result = await eslint(
+					eslintName,
+					[...eslintArgs, '--fix-dry-run', 'file.js'],
+					fixture.path,
+				);
 
-			// await execa('git', ['commit', '-am', 'a'], { cwd: fixture.path });
+				expect(result.warningCount).toBe(1);
+				expect(result.errorCount).toBe(0);
+				expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>`);
+			});
 
-			// await test('Committed file', async () => {
-			// 	const result = await eslint(eslintName, {
-			// 		config: {
-			// 			rules: {
-			// 				'fix-later/fix-later': ['warn', {
-			// 					commentTemplate: '{{ blame.author }} <{{ blame.author-mail }}>',
-			// 				}],
-			// 				'no-console': 'error',
-			// 			},
-			// 		},
-			// 		code: 'file.js',
-			// 		cwd: fixture.path,
-			// 		fix: true,
-			// 	});
+			await execa('git', ['commit', '-am', 'a'], { cwd: fixture.path });
 
-			// 	expect(result.warningCount).toBe(1);
-			// 	expect(result.errorCount).toBe(0);
-			// 	expect(result.output).toBe(
-			// 		outdent`
-			// 		console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>
-			// 		`,
-			// 	);
-			// });
+			await test('Committed file', async () => {
+				const result = await eslint(
+					eslintName,
+					[...eslintArgs, '--fix-dry-run', 'file.js'],
+					fixture.path,
+				);
+
+				expect(result.warningCount).toBe(1);
+				expect(result.errorCount).toBe(0);
+				expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>`);
+			});
 		});
 
-		// test('CODEOWNERS', async () => {
-		// 	const result = await eslint(eslintName, {
-		// 		config: {
-		// 			rules: {
-		// 				'fix-later/fix-later': ['warn', {
-		// 					commentTemplate: 'TODO: {{ codeowner }}',
-		// 				}],
-		// 				'no-console': 'error',
-		// 			},
-		// 		},
-		// 		code: 'file.js',
-		// 		cwd: fixture.path,
-		// 		fix: true,
-		// 	});
+		test('CODEOWNERS', async () => {
+			eslintArgs = await addConfig(
+				eslintName,
+				fixture,
+				{
+					rules: {
+						'fix-later/fix-later': ['warn', {
+							commentTemplate: 'TODO: {{ codeowner }}',
+						}],
+						'no-console': 'error',
+					},
+				},
+			);
 
-		// 	expect(result.warningCount).toBe(1);
-		// 	expect(result.errorCount).toBe(0);
-		// 	expect(result.output).toBe(
-		// 		outdent`
-		// 		console.log() // eslint-disable-line no-console -- TODO: @johndoe
-		// 		`,
-		// 	);
-		// });
+			const result = await eslint(
+				eslintName,
+				[...eslintArgs, '--fix-dry-run', 'file.js'],
+				fixture.path,
+			);
+
+			expect(result.warningCount).toBe(1);
+			expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- TODO: @johndoe`);
+		});
 	});
 });
