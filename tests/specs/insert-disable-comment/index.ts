@@ -15,14 +15,12 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: outdent`
+					code: outdent`
 						asdf(
 							1,console.log()
 						)
 						`,
-					},
-					fix: true,
+						fix : true,
 				});
 
 				expect(result.output).toBe(
@@ -46,10 +44,8 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'asdf(1,console.log())',
-					},
-					fix: true,
+					code: 'asdf(1,console.log())',
+					fix : true,
 				});
 
 				expect(result.output).toBe(
@@ -71,10 +67,8 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
-					fix: true,
+					code: 'console.log()',
+					fix : true,
 				});
 
 				expect(result.warningCount).toBe(0);
@@ -97,14 +91,12 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: outdent`
+					code: outdent`
 							asdf(
 								1,console.log()
 							)
 						`,
-					},
-					fix: true,
+						fix : true,
 				});
 
 				expect(result.warningCount).toBe(0);
@@ -129,10 +121,8 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'asdf(1,console.log())',
-					},
-					fix: true,
+					code: 'asdf(1,console.log())',
+					fix : true,
 				});
 
 				expect(result.warningCount).toBe(0);

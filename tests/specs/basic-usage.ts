@@ -12,9 +12,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						'no-console': 'error',
 					},
 				},
-				code: {
-					content: 'console.log()',
-				},
+				code: 'console.log()',
 				fix: true,
 			});
 
@@ -31,9 +29,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						semi: ['error', 'never'],
 					},
 				},
-				code: {
-					content: '1;',
-				},
+				code: '1;',
 				fix: true,
 			});
 
@@ -51,9 +47,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 				});
 
 				expect(result.warningCount).toBe(1);
@@ -90,9 +84,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 				});
 
 				expect(result.warningCount).toBe(1);
@@ -131,9 +123,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						'no-undef': 'error',
 					},
 				},
-				code: {
-					content: 'asdf(console.log())',
-				},
+				code: 'asdf(console.log())',
 				fix: true,
 			});
 
@@ -215,9 +205,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'warn',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 					fix: true,
 				});
 
@@ -237,9 +225,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'warn',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 					fix: true,
 				});
 
@@ -251,7 +237,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		if (eslintPath.includes('eslint8')) {
 			test('apply fix-only with --fix-type=directive', async () => {
-				const content = outdent`
+				const code = outdent`
 				var foo = () => 0
 				`;
 				const result = await eslintWithCode(eslintPath, {
@@ -266,9 +252,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'arrow-body-style': ['error', 'always'],
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 
 					// Only applies fix-later and doesn't auto-fix the arrow-body-style
@@ -285,12 +269,12 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		}
 
 		test('inherits indentation without mixing tabs + spaces', async () => {
-			const content = outdent`
+			const code = outdent`
 			if (true) {
 				 console.log()
 			}
 			`;
-			expect(content).toMatch('\n\t console');
+			expect(code).toMatch('\n\t console');
 			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
@@ -300,9 +284,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						'no-mixed-spaces-and-tabs': 'error',
 					},
 				},
-				code: {
-					content,
-				},
+				code,
 				fix: true,
 			});
 
@@ -318,13 +300,13 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('merges eslint-disable comment if exists', ({ test }) => {
 			test('above-line', async () => {
-				const content = outdent`
+				const code = outdent`
 				if (true) {
 					// eslint-disable-next-line no-mixed-spaces-and-tabs
 					 console.log()
 				}
 				`;
-				expect(content).toMatch('\n\t console');
+				expect(code).toMatch('\n\t console');
 				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
@@ -335,9 +317,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 				});
 
@@ -352,7 +332,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('same-line', async () => {
-				const content = outdent`
+				const code = outdent`
 				if (true) {
 					 console.log() /* eslint-disable-line no-mixed-spaces-and-tabs */
 				}
@@ -365,9 +345,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 				});
 

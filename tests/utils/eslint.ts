@@ -36,8 +36,8 @@ export const eslint = async (
 	return firstFile;
 };
 
-type Code = {
-	name?: string;
+type Code = string | {
+	name: string;
 	content: string;
 };
 
@@ -77,9 +77,15 @@ export const eslintWithCode = async (
 		}
 	}
 
-	const filename = code.name || 'file.js';
-	await fixture.writeFile(filename, code.content);
-	eslintArgs.push(fixture.getPath(filename));
+	if (typeof code === 'string') {
+		const filename = 'file.js';
+		await fixture.writeFile(filename, code);
+		eslintArgs.push(filename);
+
+	} else {
+		await fixture.writeFile(code.name, code.content);
+		eslintArgs.push(code.name);
+	}
 
 	return await eslint(
 		eslintName,
