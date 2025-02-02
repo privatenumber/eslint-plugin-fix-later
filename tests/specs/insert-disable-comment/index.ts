@@ -1,12 +1,12 @@
 import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
-import { eslint } from '../../utils/eslint.js';
+import { eslintWithCode } from '../../utils/eslint.js';
 
 export default testSuite(({ describe }, eslintPath: string) => {
 	describe('insertDisableComment', ({ describe, runTestSuite }) => {
 		describe('end-of-line', ({ test }) => {
 			test('added to complex line', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -15,13 +15,11 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: outdent`
+					code: outdent`
 						asdf(
 							1,console.log()
 						)
 						`,
-					},
 					fix: true,
 				});
 
@@ -37,7 +35,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('added to even more complex line', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -46,9 +44,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'asdf(1,console.log())',
-					},
+					code: 'asdf(1,console.log())',
 					fix: true,
 				});
 
@@ -62,7 +58,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('above-line', ({ test }) => {
 			test('simple code', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -71,9 +67,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 					fix: true,
 				});
 
@@ -88,7 +82,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('complex code', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -97,13 +91,11 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: outdent`
+					code: outdent`
 							asdf(
 								1,console.log()
 							)
 						`,
-					},
 					fix: true,
 				});
 
@@ -120,7 +112,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('condensed code', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['error', {
@@ -129,9 +121,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'asdf(1,console.log())',
-					},
+					code: 'asdf(1,console.log())',
 					fix: true,
 				});
 

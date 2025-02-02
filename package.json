@@ -36,11 +36,13 @@
 	"imports": {
 		"eslint": {
 			"eslint7": "eslint7",
-			"eslint8": "eslint8"
+			"eslint8": "eslint8",
+			"eslint9": "eslint9"
 		},
 		"eslint/*": {
 			"eslint7": "eslint7/*",
-			"eslint8": "eslint8/*"
+			"eslint8": "eslint8/*",
+			"eslint9": "eslint9/*"
 		}
 	},
 	"packageManager": "pnpm@9.2.0",
@@ -56,6 +58,8 @@
 		"eslint": "^7.0.0"
 	},
 	"devDependencies": {
+		"@eslint/config-array": "^0.19.2",
+		"@eslint/eslintrc": "^3.2.0",
 		"@types/eslint": "^8.56.10",
 		"@types/estree": "^1.0.5",
 		"@types/node": "^20.14.11",
@@ -65,6 +69,7 @@
 		"eslint-plugin-vue": "^9.27.0",
 		"eslint7": "npm:eslint@7.0.0",
 		"eslint8": "npm:eslint@^8.56.0",
+		"eslint9": "npm:eslint@^9.18.0",
 		"execa": "^8.0.1",
 		"find-up-simple": "^1.0.0",
 		"fs-fixture": "^2.6.0",
