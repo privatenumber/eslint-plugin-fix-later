@@ -1,12 +1,7 @@
 import type { ESLint, Linter } from 'eslint';
 import { rules } from './rules/index.js';
 
-const plugin = {
-	rules,
-	configs: {
-		recommended: {},
-	},
-} satisfies ESLint.Plugin;
+const plugin: ESLint.Plugin = { rules };
 
 const recommended = {
 	plugins: {
@@ -18,8 +13,10 @@ const recommended = {
 			commentTemplate: 'Please fix',
 		}],
 	},
-} satisfies Linter.Config;
+} satisfies Linter.FlatConfig;
 
-plugin.configs.recommended = recommended;
-
-export default plugin;
+export default Object.assign(plugin, {
+	configs: {
+		recommended,
+	},
+});
