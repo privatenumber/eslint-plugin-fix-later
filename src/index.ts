@@ -10,7 +10,7 @@ const recommended = {
 	rules: {
 		'fix-later/fix-later': ['warn', {
 			insertDisableComment: 'above-line',
-			commentTemplate: 'Please fix',
+			commentTemplate: 'Fix later',
 		}],
 	},
 } satisfies Linter.FlatConfig;
