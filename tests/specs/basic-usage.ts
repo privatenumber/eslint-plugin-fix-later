@@ -1,20 +1,18 @@
 import { testSuite, expect } from 'manten';
 import outdent from 'outdent';
-import { eslint } from '../utils/eslint.js';
+import { eslintWithCode } from '../utils/eslint.js';
 
 export default testSuite(({ describe }, eslintPath: string) => {
 	describe('basic usage', async ({ describe, test }) => {
 		test('off', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'off',
 						'no-console': 'error',
 					},
 				},
-				code: {
-					content: 'console.log()',
-				},
+				code: 'console.log()',
 				fix: true,
 			});
 
@@ -24,16 +22,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('ignores auto-fixable rules & no options', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'error',
 						semi: ['error', 'never'],
 					},
 				},
-				code: {
-					content: '1;',
-				},
+				code: '1;',
 				fix: true,
 			});
 
@@ -44,16 +40,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('inherits severity', ({ test }) => {
 			test('"warning"', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 'warn',
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 				});
 
 				expect(result.warningCount).toBe(1);
@@ -83,16 +77,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('1', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 1,
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 				});
 
 				expect(result.warningCount).toBe(1);
@@ -123,7 +115,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('handles multiple rules', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': 'warn',
@@ -131,9 +123,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						'no-undef': 'error',
 					},
 				},
-				code: {
-					content: 'asdf(console.log())',
-				},
+				code: 'asdf(console.log())',
 				fix: true,
 			});
 
@@ -208,16 +198,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('includeWarnings', ({ test }) => {
 			test('false', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn'],
 							'no-console': 'warn',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 					fix: true,
 				});
 
@@ -228,7 +216,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('true', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -237,9 +225,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'warn',
 						},
 					},
-					code: {
-						content: 'console.log()',
-					},
+					code: 'console.log()',
 					fix: true,
 				});
 
@@ -251,10 +237,10 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		if (eslintPath.includes('eslint8')) {
 			test('apply fix-only with --fix-type=directive', async () => {
-				const content = outdent`
+				const code = outdent`
 				var foo = () => 0
 				`;
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						parserOptions: {
 							ecmaVersion: 2021,
@@ -266,9 +252,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'arrow-body-style': ['error', 'always'],
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 
 					// Only applies fix-later and doesn't auto-fix the arrow-body-style
@@ -285,13 +269,13 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		}
 
 		test('inherits indentation without mixing tabs + spaces', async () => {
-			const content = outdent`
+			const code = outdent`
 			if (true) {
 				 console.log()
 			}
 			`;
-			expect(content).toMatch('\n\t console');
-			const result = await eslint(eslintPath, {
+			expect(code).toMatch('\n\t console');
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
 						'fix-later/fix-later': ['warn', {
@@ -300,9 +284,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						'no-mixed-spaces-and-tabs': 'error',
 					},
 				},
-				code: {
-					content,
-				},
+				code,
 				fix: true,
 			});
 
@@ -318,14 +300,14 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		describe('merges eslint-disable comment if exists', ({ test }) => {
 			test('above-line', async () => {
-				const content = outdent`
+				const code = outdent`
 				if (true) {
 					// eslint-disable-next-line no-mixed-spaces-and-tabs
 					 console.log()
 				}
 				`;
-				expect(content).toMatch('\n\t console');
-				const result = await eslint(eslintPath, {
+				expect(code).toMatch('\n\t console');
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': ['warn', {
@@ -335,9 +317,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 				});
 
@@ -352,12 +332,12 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 
 			test('same-line', async () => {
-				const content = outdent`
+				const code = outdent`
 				if (true) {
 					 console.log() /* eslint-disable-line no-mixed-spaces-and-tabs */
 				}
 				`;
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						rules: {
 							'fix-later/fix-later': 'warn',
@@ -365,9 +345,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							'no-console': 'error',
 						},
 					},
-					code: {
-						content,
-					},
+					code,
 					fix: true,
 				});
 
@@ -382,7 +360,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		});
 
 		test('vue', async () => {
-			const result = await eslint(eslintPath, {
+			const result = await eslintWithCode(eslintPath, {
 				config: {
 					extends: 'plugin:vue/vue3-recommended',
 					rules: {
@@ -438,7 +416,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 
 		if (eslintPath.includes('eslint8')) {
 			test('consecutive errors', async () => {
-				const result = await eslint(eslintPath, {
+				const result = await eslintWithCode(eslintPath, {
 					config: {
 						extends: 'plugin:vue/base',
 						rules: {

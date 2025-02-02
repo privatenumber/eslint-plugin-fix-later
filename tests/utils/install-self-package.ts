@@ -4,10 +4,8 @@ import { name } from '../../package.json';
 
 const selfPackagePath = process.cwd();
 
-export const installSelfPackage = async (
-	cwd: string,
-) => {
-	const packageInstallPath = path.join(cwd, 'node_modules', name);
+export const installSelfPackage = async () => {
+	const packageInstallPath = path.resolve('node_modules', name);
 	const packageInstalled = await fs.lstat(packageInstallPath).then(() => true, () => false);
 	if (packageInstalled) {
 		const symlinkedPath = await fs.readlink(packageInstallPath);

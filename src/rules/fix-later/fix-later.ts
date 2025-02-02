@@ -31,7 +31,10 @@ const suppressFileErrors = (
 	sourceCode: SourceCode,
 	extractedConfig: Linter.Config,
 	messages: LintMessage[],
-	{ fix, filename }: Linter.FixOptions,
+	{ fix, filename }: {
+		filename?: string;
+		fix?: boolean | ((message: LintMessage) => boolean);
+	},
 ) => {
 	if (!ruleId || !ruleOptions) {
 		return messages;
@@ -234,6 +237,7 @@ const suppressFileErrors = (
 const {
 	_verifyWithoutProcessors,
 	_verifyWithProcessor,
+	_verifyWithFlatConfigArray,
 } = eslint.Linter.prototype;
 
 eslint.Linter.prototype._verifyWithoutProcessors = function (
@@ -286,3 +290,28 @@ eslint.Linter.prototype._verifyWithProcessor = function (
 		options,
 	);
 };
+
+if (_verifyWithFlatConfigArray) {
+	eslint.Linter.prototype._verifyWithFlatConfigArray = function (
+		textOrSourceCode,
+		configArray,
+		options,
+	) {
+		const messages: LintMessage[] = Reflect.apply(
+			_verifyWithFlatConfigArray,
+			this,
+			arguments,
+		);
+
+		const filename = options.filename || '__placeholder__.js';
+		const config = configArray.getConfig(filename);
+
+		return suppressFileErrors(
+			textOrSourceCode as string,
+			this.getSourceCode(),
+			config,
+			messages,
+			options,
+		);
+	};
+}
