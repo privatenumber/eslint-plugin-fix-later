@@ -77,7 +77,7 @@ export default testSuite(({ describe }, eslintName: string) => {
 
 				expect(result.warningCount).toBe(1);
 				expect(result.errorCount).toBe(0);
-				expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>`);
+				expect(result.output).toBe('console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>');
 			});
 
 			await execa('git', ['commit', '-am', 'a'], { cwd: fixture.path });
@@ -91,7 +91,7 @@ export default testSuite(({ describe }, eslintName: string) => {
 
 				expect(result.warningCount).toBe(1);
 				expect(result.errorCount).toBe(0);
-				expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>`);
+				expect(result.output).toBe('console.log() // eslint-disable-line no-console -- John Doe <john@doe.org>');
 			});
 		});
 
@@ -117,7 +117,7 @@ export default testSuite(({ describe }, eslintName: string) => {
 
 			expect(result.warningCount).toBe(1);
 			expect(result.errorCount).toBe(0);
-			expect(result.output).toBe(`console.log() // eslint-disable-line no-console -- TODO: @johndoe`);
+			expect(result.output).toBe('console.log() // eslint-disable-line no-console -- TODO: @johndoe');
 		});
 	});
 });

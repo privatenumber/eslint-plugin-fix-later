@@ -1,5 +1,5 @@
 import type { Linter } from 'eslint';
-import { type FsFixture } from 'fs-fixture';
+import type { FsFixture } from 'fs-fixture';
 import { name } from '../../package.json';
 
 const addFlatConfig = async (
@@ -20,8 +20,7 @@ const addFlatConfig = async (
 			},
 			...new FlatCompat().config(${JSON.stringify(configRaw)})
 		];
-		`,
-	);
+		`);
 
 	return [
 		'--no-config-lookup',
@@ -55,11 +54,9 @@ const addESlintrcConfig = async (
 };
 
 export const addConfig = async (
-    eslintName: string,
-    fixture: FsFixture,
-    configRaw: Linter.Config,
-) => {
-    return eslintName === 'eslint9'
-        ? addFlatConfig(fixture, configRaw)
-        : addESlintrcConfig(fixture, configRaw);
-};
+	eslintName: string,
+	fixture: FsFixture,
+	configRaw: Linter.Config,
+) => (eslintName === 'eslint9'
+	? addFlatConfig(fixture, configRaw)
+	: addESlintrcConfig(fixture, configRaw));
