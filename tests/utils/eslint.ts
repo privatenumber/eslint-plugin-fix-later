@@ -21,20 +21,21 @@ export const eslintRaw = (
 	},
 );
 
-type StdIn = {
+type Code = {
 	name?: string;
 	content: string;
 };
 
 type Options = {
 	config: Linter.Config;
-	code: string | StdIn;
+	code: Code;
 	cwd?: string;
 	fix?: boolean;
 	fixType?: 'directive';
 };
 
 const nodeModulesPath = path.resolve('./node_modules');
+const installingSelf = installSelfPackage();
 
 export const eslint = async (
 	eslintName: string,
@@ -46,7 +47,7 @@ export const eslint = async (
 		fixType,
 	}: Options,
 ) => {
-	await installSelfPackage();
+	await installingSelf;
 
 	await using fixture = await createFixture({
 		node_modules: ({ symlink }) => symlink(nodeModulesPath),
@@ -103,25 +104,15 @@ export const eslint = async (
 		}
 	}
 
-	if (typeof code === 'object') {
-		const filename = code.name || 'file.js';
-		await fixture.writeFile(filename, code.content);
-		eslintArgs.push(fixture.getPath(filename));
-	} else {
-		eslintArgs.push(code);
-	}
+	const filename = code.name || 'file.js';
+	await fixture.writeFile(filename, code.content);
+	eslintArgs.push(fixture.getPath(filename));
 
-	const eslintProcess = eslintRaw(
+	const processResult = await eslintRaw(
 		eslintName,
 		eslintArgs,
 		cwd ?? fixture.path,
 	);
-
-	if (typeof code === 'object') {
-		eslintProcess.stdin!.end(code.content);
-	}
-
-	const processResult = await eslintProcess;
 
 	let results: ESLint.LintResult[];
 	try {
