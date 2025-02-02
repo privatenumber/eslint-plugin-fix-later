@@ -24,7 +24,7 @@ const nodeModulesPath = path.resolve('./node_modules');
 export const eslint = async (
 	eslintName: string,
 	{
-		cwd = processCwd,
+		cwd,
 		config: configRaw,
 		code,
 		fix,
@@ -35,19 +35,49 @@ export const eslint = async (
 
 	await using fixture = await createFixture({
 		node_modules: ({ symlink }) => symlink(nodeModulesPath),
-		'config.json': JSON.stringify({
-			root: true,
-			plugins: [
-				name,
-			],
-			...configRaw,
-		}),
+		...(
+			eslintName === 'eslint9'
+				? {
+					'eslint.config.mjs': `
+					import fixLater from '${name}'
+					import { FlatCompat } from '@eslint/eslintrc';
+
+					export default [
+						{
+							plugins: {
+								'fix-later': fixLater,
+							},
+						},
+						...new FlatCompat().config(${JSON.stringify(configRaw)})
+					];
+					`,
+				}
+				: {
+					'config.json': JSON.stringify({
+						root: true,
+						plugins: [
+							name,
+						],
+						...configRaw,
+					}),
+				}
+		),
 	});
 
 	const eslintArgs = [
-		'-c',
-		fixture.getPath('config.json'),
-		'--no-eslintrc',
+		...(
+			eslintName === 'eslint9'
+				? [
+					'--no-config-lookup',
+					'-c',
+					'eslint.config.mjs',
+				]
+				: [
+					'--no-eslintrc',
+					'-c',
+					'config.json',
+				]
+		),
 		'--format=json',
 	];
 
@@ -70,7 +100,7 @@ export const eslint = async (
 		path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
 		eslintArgs,
 		{
-			cwd,
+			cwd: cwd ?? fixture.path,
 			all: true,
 			stdio: 'pipe',
 			reject: false,

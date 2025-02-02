@@ -1,6 +1,8 @@
 import type { AST } from 'vue-eslint-parser';
+import { ConfigArray } from '@eslint/config-array';
 
 declare module 'eslint' {
+	class FlatConfigArray extends ConfigArray {}
 
 	type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 	interface Linter {
@@ -16,6 +18,13 @@ declare module 'eslint' {
 			textOrSourceCode: string | SourceCode,
 			config: Linter.Config,
 			options: Linter.FixOptions,
+		): LintMessage[];
+
+		_verifyWithFlatConfigArray(
+			textOrSourceCode: string | SourceCode,
+			config: FlatConfigArray,
+			options: Linter.FixOptions,
+			firstCall: boolean,
 		): LintMessage[];
 	}
 
