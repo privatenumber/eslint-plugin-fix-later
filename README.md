@@ -57,6 +57,19 @@ pnpm i -D eslint-plugin-fix-later
 
 ## Setup
 
+### Flat config
+```js
+import fixLaterPlugin from 'eslint-plugin-fix-later';
+
+export default [
+    {
+        files: ['**/*.{mjs,cjs,js,jsx,mts,cts,ts,tsx}'],
+        ...fixLaterPlugin.configs.recommended,
+    },
+];
+```
+
+### Legacy config
 In your ESLint config:
 
 ```json5
