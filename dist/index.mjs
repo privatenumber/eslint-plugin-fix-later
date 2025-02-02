@@ -1323,7 +1323,8 @@ const suppressFileErrors = (code, sourceCode, extractedConfig, messages, { fix, 
 };
 const {
   _verifyWithoutProcessors,
-  _verifyWithProcessor
+  _verifyWithProcessor,
+  _verifyWithFlatConfigArray
 } = eslint.Linter.prototype;
 eslint.Linter.prototype._verifyWithoutProcessors = function(textOrSourceCode, config, options) {
   const messages = Reflect.apply(
@@ -1356,6 +1357,24 @@ eslint.Linter.prototype._verifyWithProcessor = function(textOrSourceCode, config
     options
   );
 };
+if (_verifyWithFlatConfigArray) {
+  eslint.Linter.prototype._verifyWithFlatConfigArray = function(textOrSourceCode, configArray, options) {
+    const messages = Reflect.apply(
+      _verifyWithFlatConfigArray,
+      this,
+      arguments
+    );
+    const filename = options.filename || "__placeholder__.js";
+    const config = configArray.getConfig(filename);
+    return suppressFileErrors(
+      textOrSourceCode,
+      this.getSourceCode(),
+      config,
+      messages,
+      options
+    );
+  };
+}
 
 const escapeRegExp = (string) => string.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 
@@ -1439,12 +1458,7 @@ const rules = {
   "fix-later": fixLater
 };
 
-const plugin = {
-  rules,
-  configs: {
-    recommended: {}
-  }
-};
+const plugin = { rules };
 const recommended = {
   plugins: {
     "fix-later": plugin
@@ -1452,10 +1466,14 @@ const recommended = {
   rules: {
     "fix-later/fix-later": ["warn", {
       insertDisableComment: "above-line",
-      commentTemplate: "Please fix: {{ codeowner }}"
+      commentTemplate: "Fix later"
     }]
   }
 };
-plugin.configs.recommended = recommended;
+var index = Object.assign(plugin, {
+  configs: {
+    recommended
+  }
+});
 
-export { plugin as default };
+export { index as default };
