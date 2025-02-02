@@ -81,7 +81,6 @@ export const eslintWithCode = async (
 		const filename = 'file.js';
 		await fixture.writeFile(filename, code);
 		eslintArgs.push(filename);
-
 	} else {
 		await fixture.writeFile(code.name, code.content);
 		eslintArgs.push(code.name);

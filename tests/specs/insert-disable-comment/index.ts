@@ -20,7 +20,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							1,console.log()
 						)
 						`,
-						fix : true,
+					fix: true,
 				});
 
 				expect(result.output).toBe(
@@ -45,7 +45,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						},
 					},
 					code: 'asdf(1,console.log())',
-					fix : true,
+					fix: true,
 				});
 
 				expect(result.output).toBe(
@@ -68,7 +68,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						},
 					},
 					code: 'console.log()',
-					fix : true,
+					fix: true,
 				});
 
 				expect(result.warningCount).toBe(0);
@@ -96,7 +96,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 								1,console.log()
 							)
 						`,
-						fix : true,
+					fix: true,
 				});
 
 				expect(result.warningCount).toBe(0);
@@ -122,7 +122,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 						},
 					},
 					code: 'asdf(1,console.log())',
-					fix : true,
+					fix: true,
 				});
 
 				expect(result.warningCount).toBe(0);
