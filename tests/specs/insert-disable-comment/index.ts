@@ -146,6 +146,6 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
-		// runTestSuite(import('./template-utils.js'), eslintPath);
+		runTestSuite(import('./template-utils.js'), eslintPath);
 	});
 });

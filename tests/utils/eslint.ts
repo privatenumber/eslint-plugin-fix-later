@@ -2,8 +2,8 @@ import path from 'path';
 import { execaNode } from 'execa';
 import type { ESLint, Linter } from 'eslint';
 import { createFixture } from 'fs-fixture';
-import { name } from '../../package.json';
 import { installSelfPackage } from './install-self-package.js';
+import { addConfig } from './eslint-config.js';
 
 export const eslintRaw = (
 	eslintName: string,
@@ -11,7 +11,10 @@ export const eslintRaw = (
 	cwd: string,
 ) => execaNode(
 	path.resolve(`./node_modules/${eslintName}/bin/eslint.js`),
-	eslintArgs,
+	[
+		'--format=json',
+		...eslintArgs,
+	],
 	{
 		cwd,
 		all: true,
@@ -21,26 +24,24 @@ export const eslintRaw = (
 	},
 );
 
+// TODO: Add string type
 type Code = {
 	name?: string;
 	content: string;
 };
 
-type Options = {
-	config: Linter.Config;
-	code: Code;
-	cwd?: string;
-	fix?: boolean;
-	fixType?: 'directive';
-};
-
 const nodeModulesPath = path.resolve('./node_modules');
 const installingSelf = installSelfPackage();
 
+type Options = {
+	config: Linter.Config;
+	code: Code;
+	fix?: boolean;
+	fixType?: 'directive';
+};
 export const eslint = async (
 	eslintName: string,
 	{
-		cwd,
 		config: configRaw,
 		code,
 		fix,
@@ -51,50 +52,11 @@ export const eslint = async (
 
 	await using fixture = await createFixture({
 		node_modules: ({ symlink }) => symlink(nodeModulesPath),
-		...(
-			eslintName === 'eslint9'
-				? {
-					'eslint.config.mjs': `
-					import fixLater from '${name}'
-					import { FlatCompat } from '@eslint/eslintrc';
-
-					export default [
-						{
-							plugins: {
-								'fix-later': fixLater,
-							},
-						},
-						...new FlatCompat().config(${JSON.stringify(configRaw)})
-					];
-					`,
-				}
-				: {
-					'config.json': JSON.stringify({
-						root: true,
-						plugins: [
-							name,
-						],
-						...configRaw,
-					}),
-				}
-		),
 	});
 
+	const configArgs = await addConfig(eslintName, fixture, configRaw);
 	const eslintArgs = [
-		...(
-			eslintName === 'eslint9'
-				? [
-					'--no-config-lookup',
-					'-c',
-					'eslint.config.mjs',
-				]
-				: [
-					'--no-eslintrc',
-					'-c',
-					'config.json',
-				]
-		),
-		'--format=json',
+		...configArgs,
 	];
 
 	if (fix) {
@@ -111,7 +73,7 @@ export const eslint = async (
 	const processResult = await eslintRaw(
 		eslintName,
 		eslintArgs,
-		cwd ?? fixture.path,
+		fixture.path,
 	);
 
 	let results: ESLint.LintResult[];
