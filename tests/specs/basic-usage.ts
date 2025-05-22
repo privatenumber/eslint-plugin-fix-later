@@ -359,6 +359,72 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
+		test('jsx', async () => {
+			const result = await eslintWithCode(eslintPath, {
+				config: {
+					rules: {
+						'no-ternary': 'error',
+						'fix-later/fix-later': ['error'],
+					},
+				},
+				code: {
+					name: 'FileA.js',
+					content: outdent`
+					(
+						<>
+							{ true ? <div>Hello World</div> : null }
+						</>
+					);
+
+					(
+						<>{ true ? <div>Hello World</div> : null }</>
+					);
+
+					(<>
+						<div
+							a={true ? <div>Hello World</div> : null}
+						/>
+					</>);
+
+					(<div
+						a={true ? <div>Hello World</div> : null}
+					/>);
+					`,
+				},
+				fix: true,
+			});
+
+			console.log(result);
+			// expect(result.messages).toMatchObject([
+			// 	{
+			// 		ruleId: 'fix-later/fix-later',
+			// 		severity: 2,
+			// 		message: '[REMINDER] Fix later',
+			// 		line: 2,
+			// 		column: 2,
+			// 		endLine: 2,
+			// 		endColumn: 96,
+			// 	},
+			// ]);
+
+			// expect(result.errorCount).toBe(1);
+			// expect(result.output).toBe(
+			// 	outdent`
+			// 	<template>
+			// 		<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
+			// 		<template
+			// 			v-text="asdf"
+			// 			v-html="asdf"
+			// 		>
+			// 			<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
+			// 			{{ adf }}
+			// 		</template>
+			// 	<!-- eslint-enable vue/no-child-content -->
+			// 	</template>
+			// 	`,
+			// );
+		});
+
 		test('vue', async () => {
 			const result = await eslintWithCode(eslintPath, {
 				config: {

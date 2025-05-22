@@ -208,7 +208,7 @@ const suppressFileErrors = (
 		const comments = [];
 		if (groupedMessages.line.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
-			const { message } = groupedMessages.line[0];
+			const { type, message } = groupedMessages.line[0];
 			comments.push(`// ${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(message)}`);
 		}
 		if (groupedMessages.end.length > 0) {

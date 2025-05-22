@@ -14,6 +14,15 @@ const addFlatConfig = async (
 
 		export default [
 			{
+				languageOptions: {
+					parserOptions: {
+						ecmaFeatures: {
+							jsx: true
+						}
+					}
+				}
+			},
+			{
 				plugins: {
 					'fix-later': fixLater,
 				},
@@ -39,6 +48,13 @@ const addESlintrcConfig = async (
 		configName,
 		JSON.stringify({
 			root: true,
+			parserOptions: {
+				ecmaVersion: 2020,
+				sourceType: 'module',
+				ecmaFeatures: {
+					jsx: true,
+				},
+			},
 			plugins: [
 				name,
 			],
