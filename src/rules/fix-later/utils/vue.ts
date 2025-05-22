@@ -10,13 +10,21 @@ const safeRequire = <Type>(id: string) => {
 	}
 };
 
-const disallowedTypes = new Set(['VAttribute', 'VIdentifier', 'VExpressionContainer', 'VDirectiveKey', 'VText']);
+const ignoreNodes = new Set([
+	'VAttribute',
+	'VIdentifier',
+	'VExpressionContainer',
+	'VDirectiveKey',
+	'VText',
+]);
 
 /**
+ * Find the deepest node containing a node index
+ *
  * Re-implementation of getNodeByRangeIndex
  * https://github.com/eslint/eslint/blob/ab0ff2755d6950d7e7fb92944771c1c30f933e02/lib/languages/js/source-code/source-code.js#L707
  */
-export const getVueElement = (
+export const getVueElementNodeByRangeIndex = (
 	index: number,
 	rootNode: AST.Node,
 ): AST.Node | undefined => {
@@ -26,24 +34,23 @@ export const getVueElement = (
 	}
 
 	let result: AST.Node | undefined;
-	let broken = false;
+	let stopTraversal = false;
 	vueEslintParser.AST.traverseNodes(rootNode, {
 		enterNode: (node) => {
-			if (broken) {
+			if (stopTraversal || ignoreNodes.has(node.type)) {
 				return;
 			}
 
-			if (
-				!disallowedTypes.has(node.type)
-				&& node.range[0] <= index
-				&& index < node.range[1]
-			) {
+			if (node.range[0] <= index && index < node.range[1]) {
 				result = node;
 			}
 		},
 		leaveNode: (node) => {
-			if (!broken && node === result) {
-				broken = true;
+			if (
+				!stopTraversal
+				&& node === result
+			) {
+				stopTraversal = true;
 			}
 		},
 	});

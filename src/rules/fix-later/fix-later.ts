@@ -8,7 +8,7 @@ import { gitBlame, type GitBlame } from './utils/git.js';
 import { getCodeOwner } from './utils/codeowner.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
-import { getVueElement } from './utils/vue.js';
+import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
@@ -131,7 +131,7 @@ const suppressFileErrors = (
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
-			const templateNode = getVueElement(reportedIndex, vueDocumentFragment);
+			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
 
 			if (templateNode) {
 				addMessage(templateNode.loc.start.line, 'start', message);
