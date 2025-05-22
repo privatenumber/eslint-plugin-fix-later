@@ -14,11 +14,23 @@ type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
+const commentSyntax = {
+	js: ['/*', '*/'],
+	vue: ['<!-- ', ' -->'],
+};
+
+type CodeType = keyof typeof commentSyntax;
+
+type ReportedErrors = {
+	message: LintMessage;
+	type: CodeType;
+};
+
 const getRuleIds = (
-	lintMessages: LintMessage[],
+	lintMessages: ReportedErrors[],
 ) => {
 	const ruleIds: string[] = [];
-	for (const message of lintMessages) {
+	for (const { message } of lintMessages) {
 		if (message.ruleId && !ruleIds.includes(message.ruleId)) {
 			ruleIds.push(message.ruleId);
 		}
@@ -101,14 +113,16 @@ const suppressFileErrors = (
 
 	// The number is the line where the disable comment should be inserted
 	const groupedByLine: Record<string, {
-		line: LintMessage[];
-		start: LintMessage[];
-		end: LintMessage[];
+		line: ReportedErrors[];
+		start: ReportedErrors[];
+		end: ReportedErrors[];
 	}> = {};
+
 	const addMessage = (
 		key: string | number,
 		type: 'line' | 'start' | 'end',
 		message: LintMessage,
+		codeType: CodeType,
 	) => {
 		if (!groupedByLine[key]) {
 			groupedByLine[key] = {
@@ -117,7 +131,10 @@ const suppressFileErrors = (
 				end: [],
 			};
 		}
-		groupedByLine[key][type].push(message);
+		groupedByLine[key][type].push({
+			type: codeType,
+			message,
+		});
 	};
 
 	for (const message of processMessages) {
@@ -127,15 +144,30 @@ const suppressFileErrors = (
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
 		if (reportedNode) {
-			addMessage(message.line, 'line', message);
+			addMessage(
+				message.line,
+				'line',
+				message,
+				'js',
+			);
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
 			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
 
 			if (templateNode) {
-				addMessage(templateNode.loc.start.line, 'start', message);
-				addMessage(templateNode.loc.end.line + 1, 'end', message);
+				addMessage(
+					templateNode.loc.start.line,
+					'start',
+					message,
+					'vue',
+				);
+				addMessage(
+					templateNode.loc.end.line + 1,
+					'end',
+					message,
+					'vue',
+				);
 			}
 		}
 	}
@@ -176,15 +208,18 @@ const suppressFileErrors = (
 		const comments = [];
 		if (groupedMessages.line.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
-			comments.push(`${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(groupedMessages.line[0])}`);
+			const { message } = groupedMessages.line[0];
+			comments.push(`// ${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(message)}`);
 		}
 		if (groupedMessages.end.length > 0) {
+			const { type } = groupedMessages.end[0];
 			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
-			comments.push(`<!-- eslint-enable ${rulesToDisable} -->`);
+			comments.push(`${commentSyntax[type][0]}eslint-enable ${rulesToDisable}${commentSyntax[type][1]}`);
 		}
 		if (groupedMessages.start.length > 0) {
+			const { type, message } = groupedMessages.start[0];
 			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
-			comments.push(`<!-- eslint-disable ${rulesToDisable} -- ${getLineComment(groupedMessages.start[0])} -->`);
+			comments.push(`${commentSyntax[type][0]}eslint-disable ${rulesToDisable} -- ${getLineComment(message)}${commentSyntax[type][1]}`);
 		}
 
 		const line = Number(key);
