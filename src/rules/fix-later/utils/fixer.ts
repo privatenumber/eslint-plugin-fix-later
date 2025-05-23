@@ -12,11 +12,7 @@ const getCommentIndex = (code: string) => {
 		return lineCommentIndex;
 	}
 
-	const blockCommentIndex = code.indexOf('/*');
-	if (blockCommentIndex !== -1) {
-		return blockCommentIndex;
-	}
-	return -1;
+	return code.indexOf('/*');
 };
 
 const eslintDisableNextLine = 'eslint-disable-next-line';
@@ -114,7 +110,7 @@ export const insertCommentSameLine = (
 	));
 
 	const commentIndex = getCommentIndex(lineCode);
-	if (commentIndex) {
+	if (commentIndex !== -1) {
 		const commentBefore = parseEslintDisableComment(lineCode.slice(commentIndex));
 
 		if (commentBefore) {
