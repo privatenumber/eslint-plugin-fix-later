@@ -8,23 +8,11 @@ import { gitBlame, type GitBlame } from './utils/git.js';
 import { getCodeOwner } from './utils/codeowner.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
-import { getVueElementNodeByRangeIndex } from './utils/vue.js';
-
-type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+import {
+	groupMessagesByLine, commentSyntax, type ReportedErrors, type LintMessage,
+} from './utils/group-messages-by-line.js';
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
-
-const commentSyntax = {
-	js: ['/*', '*/'],
-	vue: ['<!-- ', ' -->'],
-};
-
-type CodeType = keyof typeof commentSyntax;
-
-type ReportedErrors = {
-	message: LintMessage;
-	type: CodeType;
-};
 
 const getRuleIds = (
 	lintMessages: ReportedErrors[],
@@ -110,68 +98,6 @@ const suppressFileErrors = (
 	}
 
 	const { commentTemplate } = ruleOptions;
-
-	// The number is the line where the disable comment should be inserted
-	const groupedByLine: Record<string, {
-		line: ReportedErrors[];
-		start: ReportedErrors[];
-		end: ReportedErrors[];
-	}> = {};
-
-	const addMessage = (
-		key: string | number,
-		type: 'line' | 'start' | 'end',
-		message: LintMessage,
-		codeType: CodeType,
-	) => {
-		if (!groupedByLine[key]) {
-			groupedByLine[key] = {
-				line: [],
-				start: [],
-				end: [],
-			};
-		}
-		groupedByLine[key][type].push({
-			type: codeType,
-			message,
-		});
-	};
-
-	for (const message of processMessages) {
-		const reportedIndex = sourceCode.getIndexFromLoc({
-			line: message.line,
-			column: message.column - 1,
-		});
-		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
-		if (reportedNode) {
-			addMessage(
-				message.line,
-				'line',
-				message,
-				'js',
-			);
-		} else {
-			// Vue.js template
-			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
-			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
-
-			if (templateNode) {
-				addMessage(
-					templateNode.loc.start.line,
-					'start',
-					message,
-					'vue',
-				);
-				addMessage(
-					templateNode.loc.end.line + 1,
-					'end',
-					message,
-					'vue',
-				);
-			}
-		}
-	}
-
 	const getLineComment = (
 		message: LintMessage,
 	): string => {
@@ -199,12 +125,8 @@ const suppressFileErrors = (
 		return comment;
 	};
 
-	for (const key in groupedByLine) {
-		if (!Object.hasOwn(groupedByLine, key)) {
-			continue;
-		}
-
-		const groupedMessages = groupedByLine[key];
+	const groupedByLine = groupMessagesByLine(sourceCode, processMessages);
+	for (const [line, groupedMessages] of groupedByLine) {
 		const comments = [];
 		if (groupedMessages.line.length > 0) {
 			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
@@ -222,7 +144,6 @@ const suppressFileErrors = (
 			comments.push(`${commentSyntax[type][0]}eslint-disable ${rulesToDisable} -- ${getLineComment(message)}${commentSyntax[type][1]}`);
 		}
 
-		const line = Number(key);
 		const lineStartIndex = sourceCode.getIndexFromLoc({
 			line,
 			column: 0,

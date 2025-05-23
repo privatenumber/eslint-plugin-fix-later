@@ -1,6 +1,8 @@
 import type VueEslintParser from 'vue-eslint-parser';
 import type { AST } from 'vue-eslint-parser';
 
+export type VueTemplateNode = AST.Node;
+
 const safeRequire = <Type>(id: string) => {
 	try {
 		// eslint-disable-next-line import-x/no-dynamic-require, @typescript-eslint/no-require-imports
@@ -26,14 +28,14 @@ const ignoreNodes = new Set([
  */
 export const getVueElementNodeByRangeIndex = (
 	index: number,
-	rootNode: AST.Node,
-): AST.Node | undefined => {
+	rootNode: VueTemplateNode,
+): VueTemplateNode | undefined => {
 	const vueEslintParser = safeRequire<typeof VueEslintParser>('vue-eslint-parser');
 	if (!vueEslintParser) {
 		return;
 	}
 
-	let result: AST.Node | undefined;
+	let result: VueTemplateNode | undefined;
 	let stopTraversal = false;
 	vueEslintParser.AST.traverseNodes(rootNode, {
 		enterNode: (node) => {
