@@ -9,6 +9,7 @@ import { getCodeOwner } from './utils/codeowner.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElementNodeByRangeIndex } from './utils/vue.js';
+import { getEnclosingJSX } from './utils/jsx.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
@@ -17,6 +18,7 @@ const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 const commentSyntax = {
 	js: ['/*', '*/'],
 	vue: ['<!-- ', ' -->'],
+	jsx: ['{/*', '*/}'],
 };
 
 type CodeType = keyof typeof commentSyntax;
@@ -137,19 +139,56 @@ const suppressFileErrors = (
 		});
 	};
 
+	function isInJSXExpressionContainer(node?: Node | null): boolean {
+		let curr = node;
+		while (curr) {
+		  if (
+			curr.type === 'JSXExpressionContainer'
+		  ) {
+			return curr;
+		  }
+		  curr = (curr as any).parent;
+		}
+		return false;
+	  }
+
 	for (const message of processMessages) {
 		const reportedIndex = sourceCode.getIndexFromLoc({
 			line: message.line,
 			column: message.column - 1,
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
+		
 		if (reportedNode) {
-			addMessage(
-				message.line,
-				'line',
-				message,
-				'js',
-			);
+			const isInJsx = isInJSXExpressionContainer(reportedNode);
+
+			if (isInJsx) {
+				// console.dir(reportedNode, { depth: 4, maxArrayLength: null });
+				// const loc = isInJsx.loc;
+				// if (!loc) {
+				// }
+				// console.log(loc);
+
+				// addMessage(
+				// 	loc.start.line,
+				// 	'start',
+				// 	message,
+				// 	'jsx',
+				// );
+				// addMessage(
+				// 	loc.end.line + 1,
+				// 	'end',
+				// 	message,
+				// 	'jsx',
+				// );
+			} else {
+				addMessage(
+					message.line,
+					'line',
+					message,
+					'js',
+				);	
+			}
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
