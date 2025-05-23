@@ -384,7 +384,7 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			console.log({
 				content,
 			});
-			
+
 			const result = await eslintWithCode(eslintPath, {
 				config: {
 					rules: {
