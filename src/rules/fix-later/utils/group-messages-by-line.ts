@@ -1,6 +1,6 @@
 import type { Linter, SourceCode } from 'eslint';
 import { getVueElementNodeByRangeIndex } from './vue.js';
-
+import type { Node } from 'estree';
 export type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 export const commentSyntax = {
@@ -42,18 +42,16 @@ export type ReportedErrors = {
 //     });
 // };
 
-// function isInJSXExpressionContainer(node?: Node | null): boolean {
-//     let curr = node;
-//     while (curr) {
-//       if (
-//         curr.type === 'JSXExpressionContainer'
-//       ) {
-//         return curr;
-//       }
-//       curr = (curr as any).parent;
-//     }
-//     return false;
-//   }
+function isInJSXExpressionContainer(node?: Node | null): boolean {
+    let curr = node;
+    while (curr) {
+      if (curr.type === 'JSXExpressionContainer') {
+        return curr;
+      }
+      curr = (curr as any).parent;
+    }
+    return false;
+}
 
 // for (const message of processMessages) {
 //     const reportedIndex = sourceCode.getIndexFromLoc({
@@ -154,12 +152,22 @@ export const groupMessagesByLine = (
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
 		if (reportedNode) {
-			addMessage(
-				message.line,
-				'line',
-				message,
-				'js',
-			);
+            const isInJsx = isInJSXExpressionContainer(reportedNode);
+            if (isInJsx) {
+                // console.log(reportedNode);
+                console.log(isInJsx);
+                /*
+                Maybe it can insert itself as L1C3 kind of thing, so all violations in the same expression
+                container can be grouped
+                */
+            } else {
+                addMessage(
+                    message.line,
+                    'line',
+                    message,
+                    'js',
+                );
+            }
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
