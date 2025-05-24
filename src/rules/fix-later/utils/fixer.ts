@@ -98,7 +98,7 @@ export const insertCommentAboveLine = (
 
 	return {
 		insertAt: lineStart,
-		text: (comment) => `${indentation}${comment}\n`,
+		text: comment => `${indentation}${comment}\n`,
 	};
 };
 
@@ -137,6 +137,6 @@ export const insertCommentSameLine = (
 
 	return {
 		insertAt,
-		text: (comment) => ` ${comment}`,
+		text: comment => ` ${comment}`,
 	};
 };

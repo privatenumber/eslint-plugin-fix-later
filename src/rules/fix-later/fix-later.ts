@@ -335,14 +335,14 @@ const suppressFileErrors = (
 		if (fix.enable.length > 0) {
 			const rules = getRuleIds2(fix.enable).join(', ');
 			comments.push(
-				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`)
+				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix.disable.length > 0) {
 			const [message] = fix.disable;
 			const rules = getRuleIds2(fix.disable).join(', ');
 			comments.push(
-				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`)
+				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix['disable-next-line'].length > 0) {
@@ -360,12 +360,12 @@ const suppressFileErrors = (
 			);
 		}
 
-		const fixObj = {
+		const fixObject = {
 			range: [insertAt, insertAt] as [number, number],
 			text: comments.join('\n'),
 		};
 
-		messages.push(createMessage(fixObj));
+		messages.push(createMessage(fixObject));
 	}
 
 	return messages;
