@@ -1,4 +1,4 @@
-import eslint, { type Linter, type SourceCode } from 'eslint';
+import eslint, { type Linter, type Rule, type SourceCode } from 'eslint';
 import { getSeverity } from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
@@ -8,9 +8,94 @@ import { gitBlame, type GitBlame } from './utils/git.js';
 import { getCodeOwner } from './utils/codeowner.js';
 import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
-import {
-	groupMessagesByLine, commentSyntax, type ReportedErrors, type LintMessage,
-} from './utils/group-messages-by-line.js';
+// import type { Linter, SourceCode } from 'eslint';
+import { getVueElementNodeByRangeIndex } from './utils/vue.js';
+
+export type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+
+export const commentSyntax = {
+	js: ['/*', '*/'],
+	vue: ['<!-- ', ' -->'],
+	jsx: ['{/*', '*/}'],
+};
+
+type CodeType = keyof typeof commentSyntax;
+
+export type ReportedErrors = {
+	message: LintMessage;
+	type: CodeType;
+};
+
+export const groupMessagesByLine = (
+	sourceCode: SourceCode,
+	messages: LintMessage[],
+) => {
+	// The number is the line where the disable comment should be inserted
+	const groupedByLine: Map<number, {
+		line: ReportedErrors[];
+		start: ReportedErrors[];
+		end: ReportedErrors[];
+	}> = new Map();
+
+	const addMessage = (
+		line: number,
+		type: 'line' | 'start' | 'end',
+		message: LintMessage,
+		codeType: CodeType,
+	) => {
+		let group = groupedByLine.get(line);
+		if (!group) {
+			group = {
+				line: [],
+				start: [],
+				end: [],
+			};
+			groupedByLine.set(line, group);
+		}
+
+		group[type].push({
+			type: codeType,
+			message,
+		});
+	};
+
+	for (const message of messages) {
+		const reportedIndex = sourceCode.getIndexFromLoc({
+			line: message.line,
+			column: message.column - 1,
+		});
+		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
+		if (reportedNode) {
+			addMessage(
+				message.line,
+				'line',
+				message,
+				'js',
+			);
+		} else {
+			// Vue.js template
+			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
+			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
+
+			if (templateNode) {
+				addMessage(
+					templateNode.loc.start.line,
+					'start',
+					message,
+					'vue',
+				);
+				addMessage(
+					templateNode.loc.end.line + 1,
+					'end',
+					message,
+					'vue',
+				);
+			}
+		}
+	}
+
+	return groupedByLine;
+};
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
@@ -97,6 +182,21 @@ const suppressFileErrors = (
 		return messages;
 	}
 
+	const createMessage = (fix: Rule.Fix): LintMessage => ({
+		/**
+		 * Not specifiying a ruleId allows us to only apply this fix
+		 * when --fix-type=directive is passed in
+		 *
+		 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
+		 */
+		ruleId: null,
+		severity: ruleSeverity,
+		message: '',
+		line: 0,
+		column: 0,
+		fix,
+	});
+
 	const { commentTemplate } = ruleOptions;
 	const getLineComment = (
 		message: LintMessage,
@@ -125,62 +225,147 @@ const suppressFileErrors = (
 		return comment;
 	};
 
-	const groupedByLine = groupMessagesByLine(sourceCode, processMessages);
-	for (const [line, groupedMessages] of groupedByLine) {
+	const disableDirective = ruleOptions!.disableDirective === 'eslint-disable-line' ? 'disable-line' : 'disable-next-line';
+	const preferCommentAbove = ruleOptions.insertDisableComment === 'above-line';
+
+	type CommentTypes = 'js' | 'jsx' | 'vue';
+	type FixMap = {
+		type: CommentTypes;
+		enable: LintMessage[];
+		disable: LintMessage[];
+		'disable-line': LintMessage[];
+		'disable-next-line': LintMessage[];
+	};
+	const createFixMap = (
+		type: CommentTypes,
+	): FixMap => ({
+		type,
+		enable: [],
+		disable: [],
+		'disable-line': [],
+		'disable-next-line': [],
+	});
+	const fixesMap = new Map<number, FixMap>();
+
+	const getFixMap = (
+		insertAt: number,
+		type: CommentTypes,
+	) => {
+		let fixMap = fixesMap.get(insertAt);
+		if (!fixMap) {
+			fixMap = createFixMap(type);
+			fixesMap.set(insertAt, fixMap);
+		}
+		return fixMap;
+	};
+
+	for (const message of processMessages) {
+		const reportedIndex = sourceCode.getIndexFromLoc({
+			line: message.line,
+			column: message.column - 1,
+		});
+		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
+		if (reportedNode) {
+			const lineStartIndex = sourceCode.getIndexFromLoc({
+				line: message.line,
+				column: 0,
+			});
+
+			const theFix = preferCommentAbove
+				? insertCommentAboveLine(
+					code,
+					lineStartIndex,
+				)
+				: insertCommentSameLine(
+					code,
+					lineStartIndex,
+				);
+
+			const fixMap = getFixMap(theFix.insertAt, 'js');
+			fixMap[disableDirective].push(message);
+			fixMap[disableDirective].text = theFix.text;
+		} else {
+			// Vue.js template
+			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
+			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
+
+			if (templateNode) {
+				const theFix = insertCommentAboveLine(
+					code,
+					sourceCode.getIndexFromLoc({
+						line: templateNode.loc.start.line,
+						column: 0,
+					}),
+				);
+
+				const fixMap1 = getFixMap(theFix.insertAt, 'vue');
+				fixMap1.disable.push(message);
+				fixMap1.disable.text = theFix.text;
+
+				const theFix2 = insertCommentAboveLine(
+					code,
+					sourceCode.getIndexFromLoc({
+						line: templateNode.loc.end.line + 1,
+						column: 0,
+					}),
+				);
+
+				const fixMap2 = getFixMap(theFix2.insertAt, 'vue');
+				fixMap2.enable.push(message);
+				fixMap2.enable.text = theFix2.text;
+			}
+		}
+	}
+
+	const getRuleIds2 = (
+		lintMessages: LintMessage[],
+	) => {
+		const ruleIds = new Set<string>();
+		for (const message of lintMessages) {
+			if (message.ruleId) {
+				ruleIds.add(message.ruleId);
+			}
+		}
+		return Array.from(ruleIds);
+	};
+
+	for (const [insertAt, fix] of fixesMap) {
 		const comments = [];
-		if (groupedMessages.line.length > 0) {
-			const rulesToDisable = getRuleIds(groupedMessages.line).join(', ');
-			const { message } = groupedMessages.line[0];
-			comments.push(`// ${ruleOptions!.disableDirective} ${rulesToDisable} -- ${getLineComment(message)}`);
+
+		if (fix.enable.length > 0) {
+			const rules = getRuleIds2(fix.enable).join(', ');
+			comments.push(
+				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`)
+			);
 		}
-		if (groupedMessages.end.length > 0) {
-			const { type } = groupedMessages.end[0];
-			const rulesToDisable = getRuleIds(groupedMessages.end).join(', ');
-			comments.push(`${commentSyntax[type][0]}eslint-enable ${rulesToDisable}${commentSyntax[type][1]}`);
+		if (fix.disable.length > 0) {
+			const [message] = fix.disable;
+			const rules = getRuleIds2(fix.disable).join(', ');
+			comments.push(
+				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`)
+			);
 		}
-		if (groupedMessages.start.length > 0) {
-			const { type, message } = groupedMessages.start[0];
-			const rulesToDisable = getRuleIds(groupedMessages.start).join(', ');
-			comments.push(`${commentSyntax[type][0]}eslint-disable ${rulesToDisable} -- ${getLineComment(message)}${commentSyntax[type][1]}`);
+		if (fix['disable-next-line'].length > 0) {
+			const [message] = fix['disable-next-line'];
+			const rules = getRuleIds2(fix['disable-next-line']).join(', ');
+			comments.push(
+				fix['disable-next-line'].text(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
+			);
+		}
+		if (fix['disable-line'].length > 0) {
+			const [message] = fix['disable-line'];
+			const rules = getRuleIds2(fix['disable-line']).join(', ');
+			comments.push(
+				fix['disable-line'].text(`// eslint-disable-line ${rules} -- ${getLineComment(message)}`),
+			);
 		}
 
-		const lineStartIndex = sourceCode.getIndexFromLoc({
-			line,
-			column: 0,
-		});
+		const fixObj = {
+			range: [insertAt, insertAt] as [number, number],
+			text: comments.join('\n'),
+		};
 
-		const comment = comments.join('\n');
-		const insertCommentAbove = (
-			ruleOptions.insertDisableComment === 'above-line'
-			|| groupedMessages.start.length > 0
-			|| groupedMessages.end.length > 0
-		);
-		messages.push({
-			/**
-			 * Not specifiying a ruleId allows us to only apply this fix
-			 * when --fix-type=directive is passed in
-			 *
-			 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
-			 */
-			ruleId: null,
-			severity: ruleSeverity,
-			message: `fix-later: insert eslint comment on L${line + (insertCommentAbove ? 1 : 0)}`,
-			line,
-			column: 0,
-			fix: (
-				insertCommentAbove
-					? insertCommentAboveLine(
-						code,
-						lineStartIndex,
-						comment,
-					)
-					: insertCommentSameLine(
-						code,
-						lineStartIndex,
-						comment,
-					)
-			),
-		});
+		messages.push(createMessage(fixObj));
 	}
 
 	return messages;
