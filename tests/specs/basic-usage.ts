@@ -359,31 +359,33 @@ export default testSuite(({ describe }, eslintPath: string) => {
 		// 	});
 		// });
 
-		test('jsx', async () => {
+		test('jsx expression', async () => {
 			const content = outdent`
 			(
 				<>
 					{ true ? <div>Hello World</div> : null }
 				</>
 			);
-			// (
-			// 	<>{ true ? <div>Hello World</div> : null }</>
-			// );
+			(
+				<>{ true ? <div>Hello World</div> : null }</>
+			);
 
-			// (<>
-			// 	<div
-			// 		a={true ? <div>Hello World</div> : null}
-			// 	/>
-			// </>);
+			(<>
+				<div
+					a={true ? <div>Hello World</div> : null}
+				/>
+			</>);
 
-			// (<div
-			// 	a={true ? <div>Hello World</div> : null}
-			// />);
+			(<div
+				a={true ? <div>Hello World</div> : null}
+			/>);
+
+			(<div
+				a={
+					true ? <div>Hello World</div> : null
+				}
+			/>);
 			`;
-
-			console.log({
-				content,
-			});
 
 			const result = await eslintWithCode(eslintPath, {
 				config: {
@@ -399,91 +401,132 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				fix: true,
 			});
 
-			console.log(result);
-			// expect(result.messages).toMatchObject([
-			// 	{
-			// 		ruleId: 'fix-later/fix-later',
-			// 		severity: 2,
-			// 		message: '[REMINDER] Fix later',
-			// 		line: 2,
-			// 		column: 2,
-			// 		endLine: 2,
-			// 		endColumn: 96,
-			// 	},
-			// ]);
+			expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(
+				outdent`
+				(
+					<>
+						{/*eslint-disable no-ternary -- Fix later*/ true ? <div>Hello World</div> : null /*eslint-enable no-ternary*/}
+					</>
+				);
+				(
+					<>{/*eslint-disable no-ternary -- Fix later*/ true ? <div>Hello World</div> : null /*eslint-enable no-ternary*/}</>
+				);
 
-			// expect(result.errorCount).toBe(1);
-			// expect(result.output).toBe(
-			// 	outdent`
-			// 	<template>
-			// 		<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
-			// 		<template
-			// 			v-text="asdf"
-			// 			v-html="asdf"
-			// 		>
-			// 			<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
-			// 			{{ adf }}
-			// 		</template>
-			// 	<!-- eslint-enable vue/no-child-content -->
-			// 	</template>
-			// 	`,
-			// );
+				(<>
+					<div
+						a={/*eslint-disable no-ternary -- Fix later*/true ? <div>Hello World</div> : null/*eslint-enable no-ternary*/}
+					/>
+				</>);
+
+				(<div
+					a={/*eslint-disable no-ternary -- Fix later*/true ? <div>Hello World</div> : null/*eslint-enable no-ternary*/}
+				/>);
+
+				(<div
+					a={
+						/*eslint-disable no-ternary -- Fix later*/
+						true ? <div>Hello World</div> : null
+						/*eslint-enable no-ternary*/
+					}
+				/>);
+				`
+			);
 		});
 
-		// test('vue', async () => {
-		// 	const result = await eslintWithCode(eslintPath, {
-		// 		config: {
-		// 			extends: 'plugin:vue/vue3-recommended',
-		// 			rules: {
-		// 				'vue/html-indent': 'off',
-		// 				'fix-later/fix-later': ['error', { includeWarnings: true }],
-		// 			},
-		// 		},
-		// 		code: {
-		// 			name: 'FileA.vue',
-		// 			content: outdent`
-		// 			<template>
-		// 				<template
-		// 					v-text="asdf"
-		// 					v-html="asdf"
-		// 				>
-		// 					{{ this.adf }}
-		// 				</template>
-		// 			</template>
-		// 			`,
-		// 		},
-		// 		fix: true,
-		// 	});
+		test('jsx element', async () => {
+			const content = outdent`
+			(
+				<div>
+					Here is a
+					<a>link</a>
+				</div>
+			);
+			`;
 
-		// 	expect(result.messages).toMatchObject([
-		// 		{
-		// 			ruleId: 'fix-later/fix-later',
-		// 			severity: 2,
-		// 			message: '[REMINDER] Fix later',
-		// 			line: 2,
-		// 			column: 2,
-		// 			endLine: 2,
-		// 			endColumn: 96,
-		// 		},
-		// 	]);
+			const result = await eslintWithCode(eslintPath, {
+				config: {
+					plugins: ['@stylistic/jsx'],
+					rules: {
+						'@stylistic/jsx/jsx-child-element-spacing': 'error',
+						'fix-later/fix-later': ['error'],
+					},
+				},
+				code: {
+					name: 'FileA.js',
+					content,
+				},
+				fix: true,
+			});
 
-		// 	expect(result.errorCount).toBe(1);
-		// 	expect(result.output).toBe(
-		// 		outdent`
-		// 		<template>
-		// 			<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
-		// 			<template
-		// 				v-text="asdf"
-		// 				v-html="asdf"
-		// 			>
-		// 				<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
-		// 				{{ adf }}
-		// 			</template>
-		// 		<!-- eslint-enable vue/no-child-content -->
-		// 		</template>
-		// 		`,
-		// 	);
-		// });
+			// expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(
+				outdent`
+				(
+					<div>
+						Here is a
+						{ /* eslint-disable-next-line */ }
+						<a>link</a>
+					</div>
+				);
+				`
+			);
+		});
+
+		test('vue', async () => {
+			const result = await eslintWithCode(eslintPath, {
+				config: {
+					extends: 'plugin:vue/vue3-recommended',
+					rules: {
+						'vue/html-indent': 'off',
+						'fix-later/fix-later': ['error', { includeWarnings: true }],
+					},
+				},
+				code: {
+					name: 'FileA.vue',
+					content: outdent`
+					<template>
+						<template
+							v-text="asdf"
+							v-html="asdf"
+						>
+							{{ this.adf }}
+						</template>
+					</template>
+					`,
+				},
+				fix: true,
+			});
+
+			expect(result.messages).toMatchObject([
+				{
+					ruleId: 'fix-later/fix-later',
+					severity: 2,
+					message: '[REMINDER] Fix later',
+					line: 2,
+					column: 2,
+					endLine: 2,
+					endColumn: 96,
+				},
+			]);
+
+			expect(result.errorCount).toBe(1);
+			expect(result.output).toBe(
+				outdent`
+				<template>
+					<!-- eslint-disable vue/no-lone-template, vue/no-v-html, vue/no-child-content -- Fix later -->
+					<template
+						v-text="asdf"
+						v-html="asdf"
+					>
+						<!-- eslint-enable vue/no-lone-template, vue/no-v-html -->
+						{{ adf }}
+					</template>
+				<!-- eslint-enable vue/no-child-content -->
+				</template>
+				`,
+			);
+		});
 
 		// if (eslintPath.includes('eslint8')) {
 		// 	test('consecutive errors', async () => {

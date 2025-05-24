@@ -259,8 +259,29 @@ const suppressFileErrors = (
 		return fixMap;
 	};
 
+	function isInJSXExpressionContainer(node?: Node | null): boolean {
+		let curr = node;
+		while (curr) {
+		if (curr.type === 'JSXExpressionContainer') {
+			return curr;
+		}
+		curr = (curr as any).parent;
+		}
+		return false;
+	}
 
-		
+
+
+	const getEnclosingJSX = (node?: Node | null): Node | null => {
+		let currentNode = node as any;
+		while (currentNode) {
+			if (currentNode.type === 'JSXElement' || currentNode.type === 'JSXFragment') {
+				return currentNode;
+			}
+			currentNode = currentNode.parent;
+		}
+		return null;
+	};
 
 
 	for (const message of processMessages) {
@@ -270,24 +291,46 @@ const suppressFileErrors = (
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
 		if (reportedNode) {
-			const lineStartIndex = sourceCode.getIndexFromLoc({
-				line: message.line,
-				column: 0,
-			});
+			const jsxExpression = isInJSXExpressionContainer(reportedNode);
+			if (jsxExpression) {
+				const fixMap1 = getFixMap(jsxExpression.start + 1, 'js');
+				fixMap1.disable.push(message);
+				fixMap1.disable.text = (comment) => comment;
 
-			const theFix = preferCommentAbove
-				? insertCommentAboveLine(
-					code,
-					lineStartIndex,
-				)
-				: insertCommentSameLine(
-					code,
-					lineStartIndex,
-				);
-
-			const fixMap = getFixMap(theFix.insertAt, 'js');
-			fixMap[disableDirective].push(message);
-			fixMap[disableDirective].text = theFix.text;
+				const fixMap2 = getFixMap(jsxExpression.end - 1, 'js');
+				fixMap2.enable.push(message);
+				fixMap2.enable.text = (comment) => comment;
+			} else {
+				const inJsx = getEnclosingJSX(reportedNode);
+				if (inJsx) {
+					const fixMap1 = getFixMap(inJsx.openingElement.start, 'jsx');
+					fixMap1.disable.push(message);
+					fixMap1.disable.text = (comment) => comment;
+	
+					const fixMap2 = getFixMap(inJsx.closingElement.end, 'jsx');
+					fixMap2.enable.push(message);
+					fixMap2.enable.text = (comment) => comment;
+				} else {
+					const lineStartIndex = sourceCode.getIndexFromLoc({
+						line: message.line,
+						column: 0,
+					});
+		
+					const theFix = preferCommentAbove
+						? insertCommentAboveLine(
+							code,
+							lineStartIndex,
+						)
+						: insertCommentSameLine(
+							code,
+							lineStartIndex,
+						);
+		
+					const fixMap = getFixMap(theFix.insertAt, 'js');
+					fixMap[disableDirective].push(message);
+					fixMap[disableDirective].text = theFix.text;	
+				}
+			}
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();

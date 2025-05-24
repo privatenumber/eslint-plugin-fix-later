@@ -60,6 +60,7 @@
 	"devDependencies": {
 		"@eslint/config-array": "^0.19.2",
 		"@eslint/eslintrc": "^3.2.0",
+		"@stylistic/eslint-plugin-jsx": "^3.1.0",
 		"@types/eslint": "^8.56.10",
 		"@types/estree": "^1.0.6",
 		"@types/node": "^20.14.11",

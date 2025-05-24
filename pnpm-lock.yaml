@@ -18,6 +18,9 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3.2.0
         version: 3.2.0
+      '@stylistic/eslint-plugin-jsx':
+        specifier: ^3.1.0
+        version: 3.1.0(eslint@7.0.0)
       '@types/eslint':
         specifier: ^8.56.10
         version: 8.56.12
@@ -696,6 +699,12 @@ packages:
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+
+  '@stylistic/eslint-plugin-jsx@3.1.0':
+    resolution: {integrity: sha512-+4SYALAM+l6OH6ARGUJ5h0coQBq7Y1QQVS8JbVFPZWuxdXVLTTwpj8qCnpW0afzyS/sBu4MaPDdGnGL16KebAQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: '>=8.40.0'
 
   '@stylistic/eslint-plugin@2.13.0':
     resolution: {integrity: sha512-RnO1SaiCFHn666wNz2QfZEFxvmiNRqhzaMXHXxXXKt+MEP7aajlPxUSMIQpKAaJfverpovEYqjBOXDq6dDcaOQ==}
@@ -3244,6 +3253,14 @@ snapshots:
     optional: true
 
   '@sinclair/typebox@0.27.8': {}
+
+  '@stylistic/eslint-plugin-jsx@3.1.0(eslint@7.0.0)':
+    dependencies:
+      eslint: 7.0.0
+      eslint-visitor-keys: 4.2.0
+      espree: 10.3.0
+      estraverse: 5.3.0
+      picomatch: 4.0.2
 
   '@stylistic/eslint-plugin@2.13.0(eslint@9.18.0)(typescript@5.7.3)':
     dependencies:

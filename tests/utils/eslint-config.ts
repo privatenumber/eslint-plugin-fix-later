@@ -55,10 +55,11 @@ const addESlintrcConfig = async (
 					jsx: true,
 				},
 			},
+			...configRaw,
 			plugins: [
+				...configRaw.plugins || [],
 				name,
 			],
-			...configRaw,
 		}),
 	);
 
