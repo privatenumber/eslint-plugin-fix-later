@@ -100,15 +100,15 @@ export const groupMessagesByLine = (
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
 const getRuleIds = (
-	lintMessages: ReportedErrors[],
+	lintMessages: LintMessage[],
 ) => {
-	const ruleIds: string[] = [];
-	for (const { message } of lintMessages) {
-		if (message.ruleId && !ruleIds.includes(message.ruleId)) {
-			ruleIds.push(message.ruleId);
+	const ruleIds = new Set<string>();
+	for (const message of lintMessages) {
+		if (message.ruleId) {
+			ruleIds.add(message.ruleId);
 		}
 	}
-	return ruleIds;
+	return Array.from(ruleIds);
 };
 
 const suppressFileErrors = (
@@ -259,6 +259,10 @@ const suppressFileErrors = (
 		return fixMap;
 	};
 
+
+		
+
+
 	for (const message of processMessages) {
 		const reportedIndex = sourceCode.getIndexFromLoc({
 			line: message.line,
@@ -317,44 +321,33 @@ const suppressFileErrors = (
 		}
 	}
 
-	const getRuleIds2 = (
-		lintMessages: LintMessage[],
-	) => {
-		const ruleIds = new Set<string>();
-		for (const message of lintMessages) {
-			if (message.ruleId) {
-				ruleIds.add(message.ruleId);
-			}
-		}
-		return Array.from(ruleIds);
-	};
 
 	for (const [insertAt, fix] of fixesMap) {
 		const comments = [];
 
 		if (fix.enable.length > 0) {
-			const rules = getRuleIds2(fix.enable).join(', ');
+			const rules = getRuleIds(fix.enable).join(', ');
 			comments.push(
 				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix.disable.length > 0) {
 			const [message] = fix.disable;
-			const rules = getRuleIds2(fix.disable).join(', ');
+			const rules = getRuleIds(fix.disable).join(', ');
 			comments.push(
 				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix['disable-next-line'].length > 0) {
 			const [message] = fix['disable-next-line'];
-			const rules = getRuleIds2(fix['disable-next-line']).join(', ');
+			const rules = getRuleIds(fix['disable-next-line']).join(', ');
 			comments.push(
 				fix['disable-next-line'].text(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
 			);
 		}
 		if (fix['disable-line'].length > 0) {
 			const [message] = fix['disable-line'];
-			const rules = getRuleIds2(fix['disable-line']).join(', ');
+			const rules = getRuleIds(fix['disable-line']).join(', ');
 			comments.push(
 				fix['disable-line'].text(`// eslint-disable-line ${rules} -- ${getLineComment(message)}`),
 			);
