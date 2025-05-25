@@ -283,6 +283,38 @@ const suppressFileErrors = (
 		return null;
 	};
 
+	const jsxEnabled = extractedConfig.parserOptions?.ecmaFeatures?.jsx;
+	const handleJsx = (
+		node: Node,
+		message: LintMessage,
+	) => {
+		if (!jsxEnabled) {
+			return;
+		}
+		const jsxExpression = isInJSXExpressionContainer(node);
+		if (jsxExpression) {
+			const fixMap1 = getFixMap(jsxExpression.start + 1, 'js');
+			fixMap1.disable.push(message);
+			fixMap1.disable.text = (comment) => comment;
+
+			const fixMap2 = getFixMap(jsxExpression.end - 1, 'js');
+			fixMap2.enable.push(message);
+			fixMap2.enable.text = (comment) => comment;
+			return true;
+		}
+
+		const inJsx = getEnclosingJSX(node);
+		if (inJsx) {
+			const fixMap1 = getFixMap(inJsx.openingElement.start, 'jsx');
+			fixMap1.disable.push(message);
+			fixMap1.disable.text = (comment) => comment;
+
+			const fixMap2 = getFixMap(inJsx.closingElement.end, 'jsx');
+			fixMap2.enable.push(message);
+			fixMap2.enable.text = (comment) => comment;
+			return true;
+		}
+	}	
 
 	for (const message of processMessages) {
 		const reportedIndex = sourceCode.getIndexFromLoc({
@@ -291,46 +323,28 @@ const suppressFileErrors = (
 		});
 		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
 		if (reportedNode) {
-			const jsxExpression = isInJSXExpressionContainer(reportedNode);
-			if (jsxExpression) {
-				const fixMap1 = getFixMap(jsxExpression.start + 1, 'js');
-				fixMap1.disable.push(message);
-				fixMap1.disable.text = (comment) => comment;
-
-				const fixMap2 = getFixMap(jsxExpression.end - 1, 'js');
-				fixMap2.enable.push(message);
-				fixMap2.enable.text = (comment) => comment;
-			} else {
-				const inJsx = getEnclosingJSX(reportedNode);
-				if (inJsx) {
-					const fixMap1 = getFixMap(inJsx.openingElement.start, 'jsx');
-					fixMap1.disable.push(message);
-					fixMap1.disable.text = (comment) => comment;
-	
-					const fixMap2 = getFixMap(inJsx.closingElement.end, 'jsx');
-					fixMap2.enable.push(message);
-					fixMap2.enable.text = (comment) => comment;
-				} else {
-					const lineStartIndex = sourceCode.getIndexFromLoc({
-						line: message.line,
-						column: 0,
-					});
-		
-					const theFix = preferCommentAbove
-						? insertCommentAboveLine(
-							code,
-							lineStartIndex,
-						)
-						: insertCommentSameLine(
-							code,
-							lineStartIndex,
-						);
-		
-					const fixMap = getFixMap(theFix.insertAt, 'js');
-					fixMap[disableDirective].push(message);
-					fixMap[disableDirective].text = theFix.text;	
-				}
+			const isJsx = handleJsx(reportedNode, message);
+			if (isJsx) {
+				continue;
 			}
+
+			const lineStartIndex = sourceCode.getIndexFromLoc({
+				line: message.line,
+				column: 0,
+			});
+			const theFix = preferCommentAbove
+				? insertCommentAboveLine(
+					code,
+					lineStartIndex,
+				)
+				: insertCommentSameLine(
+					code,
+					lineStartIndex,
+				);
+
+			const fixMap = getFixMap(theFix.insertAt, 'js');
+			fixMap[disableDirective].push(message);
+			fixMap[disableDirective].text = theFix.text;	
 		} else {
 			// Vue.js template
 			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
