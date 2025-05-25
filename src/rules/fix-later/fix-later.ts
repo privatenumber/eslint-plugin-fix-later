@@ -153,10 +153,10 @@ const suppressFileErrors = (
 	type CommentTypes = 'js' | 'jsx' | 'vue';
 	type FixMap = {
 		type: CommentTypes;
-		enable: LintMessage[];
-		disable: LintMessage[];
-		'disable-line': LintMessage[];
-		'disable-next-line': LintMessage[];
+		enable?: LintMessage[];
+		disable?: LintMessage[];
+		'disable-line'?: LintMessage[];
+		'disable-next-line'?: LintMessage[];
 	};
 
 	const fixesMap = new Map<number, FixMap>();
@@ -168,10 +168,6 @@ const suppressFileErrors = (
 		if (!fixesMap.has(insertAt)) {
 			fixesMap.set(insertAt, {
 				type,
-				enable: [],
-				disable: [],
-				'disable-line': [],
-				'disable-next-line': [],
 			});
 		}
 		return fixesMap.get(insertAt)!;
@@ -181,12 +177,18 @@ const suppressFileErrors = (
 		message: LintMessage,
 		insertAt: number,
 		type: CommentTypes,
-		directive: keyof FixMap,
+		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
 		text: string,
 	) => {
 		const fixMap = getOrCreateFixMap(insertAt, type);
-		fixMap[directive].push(message);
-		fixMap[directive].text = text;
+
+		let got = fixMap[directive];
+		if (!got) {
+			got = [];
+			got.text = text;
+			fixMap[directive] = got;
+		}
+		got.push(message);
 	};
 
 	for (const message of processMessages) {
@@ -230,27 +232,27 @@ const suppressFileErrors = (
 	for (const [insertAt, fix] of fixesMap) {
 		const comments = [];
 
-		if (fix.enable.length > 0) {
+		if (fix.enable) {
 			const rules = getRuleIds(fix.enable).join(', ');
 			comments.push(
 				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
 			);
 		}
-		if (fix.disable.length > 0) {
+		if (fix.disable) {
 			const [message] = fix.disable;
 			const rules = getRuleIds(fix.disable).join(', ');
 			comments.push(
 				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
 			);
 		}
-		if (fix['disable-next-line'].length > 0) {
+		if (fix['disable-next-line']) {
 			const [message] = fix['disable-next-line'];
 			const rules = getRuleIds(fix['disable-next-line']).join(', ');
 			comments.push(
 				fix['disable-next-line'].text(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
 			);
 		}
-		if (fix['disable-line'].length > 0) {
+		if (fix['disable-line']) {
 			const [message] = fix['disable-line'];
 			const rules = getRuleIds(fix['disable-line']).join(', ');
 			comments.push(
