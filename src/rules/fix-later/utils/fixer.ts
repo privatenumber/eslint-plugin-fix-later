@@ -1,5 +1,3 @@
-import type { Rule } from 'eslint';
-
 /**
  * Regex to only match a sequence of tabs or spaces (not both)
  * \s is not used because it can include new lines which we don't want
@@ -68,7 +66,7 @@ const parseEslintDisableComment = (comment: string) => {
 	};
 };
 
-export type Asdf = {
+type Fix = {
 	insertAt: number;
 	text: (comment: string) => string;
 };
@@ -76,7 +74,7 @@ export type Asdf = {
 export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
-): Asdf => {
+): Fix => {
 	const indentation = code.slice(lineStart).match(tabOrSpaces)![0];
 	const codeBefore = code.slice(0, lineStart - 1);
 	const lastNewLine = codeBefore.lastIndexOf('\n');
@@ -105,7 +103,7 @@ export const insertCommentAboveLine = (
 export const insertCommentSameLine = (
 	code: string,
 	lineStart: number,
-): Asdf => {
+): Fix => {
 	const codeFromLine = code.slice(lineStart);
 	const nextLineIndex = codeFromLine.indexOf('\n');
 	const lineCode = codeFromLine.slice(0, (
