@@ -10,7 +10,7 @@ import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 
-export type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
 const commentSyntax = {
 	js: ['/*', '*/'],
@@ -145,9 +145,10 @@ const suppressFileErrors = (
 
 		return comment;
 	};
-
-	const disableDirective = ruleOptions!.disableDirective === 'eslint-disable-line' ? 'disable-line' : 'disable-next-line';
-	const preferCommentAbove = ruleOptions.insertDisableComment === 'above-line';
+	const disableDirectiveKey = ruleOptions!.disableDirective === 'eslint-disable-line'
+		? 'disable-line'
+		: 'disable-next-line';
+	const preferAbove = ruleOptions.insertDisableComment === 'above-line';
 
 	type CommentTypes = 'js' | 'jsx' | 'vue';
 	type FixMap = {
@@ -157,83 +158,72 @@ const suppressFileErrors = (
 		'disable-line': LintMessage[];
 		'disable-next-line': LintMessage[];
 	};
-	const createFixMap = (
-		type: CommentTypes,
-	): FixMap => ({
-		type,
-		enable: [],
-		disable: [],
-		'disable-line': [],
-		'disable-next-line': [],
-	});
+
 	const fixesMap = new Map<number, FixMap>();
 
-	const getFixMap = (
+	const getOrCreateFixMap = (
 		insertAt: number,
 		type: CommentTypes,
-	) => {
-		let fixMap = fixesMap.get(insertAt);
-		if (!fixMap) {
-			fixMap = createFixMap(type);
-			fixesMap.set(insertAt, fixMap);
+	): FixMap => {
+		if (!fixesMap.has(insertAt)) {
+			fixesMap.set(insertAt, {
+				type,
+				enable: [],
+				disable: [],
+				'disable-line': [],
+				'disable-next-line': [],
+			});
 		}
-		return fixMap;
+		return fixesMap.get(insertAt)!;
+	};
+
+	const insertFix = (
+		message: LintMessage,
+		insertAt: number,
+		type: CommentTypes,
+		directive: keyof FixMap,
+		text: string,
+	) => {
+		const fixMap = getOrCreateFixMap(insertAt, type);
+		fixMap[directive].push(message);
+		fixMap[directive].text = text;
 	};
 
 	for (const message of processMessages) {
-		const reportedIndex = sourceCode.getIndexFromLoc({
+		const index = sourceCode.getIndexFromLoc({
 			line: message.line,
 			column: message.column - 1,
 		});
-		const reportedNode = sourceCode.getNodeByRangeIndex(reportedIndex);
-		if (reportedNode) {
-			const lineStartIndex = sourceCode.getIndexFromLoc({
+		const node = sourceCode.getNodeByRangeIndex(index);
+
+		if (node) {
+			const lineStart = sourceCode.getIndexFromLoc({
 				line: message.line,
 				column: 0,
 			});
-			const theFix = preferCommentAbove
-				? insertCommentAboveLine(
-					code,
-					lineStartIndex,
-				)
-				: insertCommentSameLine(
-					code,
-					lineStartIndex,
-				);
+			const fix = preferAbove ? insertCommentAboveLine(code, lineStart) : insertCommentSameLine(code, lineStart);
+			insertFix(message, fix.insertAt, 'js', disableDirectiveKey, fix.text);
+			continue;
+		}
 
-			const fixMap = getFixMap(theFix.insertAt, 'js');
-			fixMap[disableDirective].push(message);
-			fixMap[disableDirective].text = theFix.text;
-		} else {
-			// Vue.js template
-			const vueDocumentFragment = sourceCode.parserServices.getDocumentFragment?.();
-			const templateNode = getVueElementNodeByRangeIndex(reportedIndex, vueDocumentFragment);
+		const vueFrag = sourceCode.parserServices.getDocumentFragment?.();
+		const vueNode = getVueElementNodeByRangeIndex(index, vueFrag);
 
-			if (templateNode) {
-				const theFix = insertCommentAboveLine(
-					code,
-					sourceCode.getIndexFromLoc({
-						line: templateNode.loc.start.line,
-						column: 0,
-					}),
-				);
+		if (vueNode) {
+			const disableLine = sourceCode.getIndexFromLoc({
+				line: vueNode.loc.start.line,
+				column: 0,
+			});
+			const enableLine = sourceCode.getIndexFromLoc({
+				line: vueNode.loc.end.line + 1,
+				column: 0,
+			});
 
-				const fixMap1 = getFixMap(theFix.insertAt, 'vue');
-				fixMap1.disable.push(message);
-				fixMap1.disable.text = theFix.text;
+			const disableFix = insertCommentAboveLine(code, disableLine);
+			insertFix(message, disableFix.insertAt, 'vue', 'disable', disableFix.text);
 
-				const theFix2 = insertCommentAboveLine(
-					code,
-					sourceCode.getIndexFromLoc({
-						line: templateNode.loc.end.line + 1,
-						column: 0,
-					}),
-				);
-
-				const fixMap2 = getFixMap(theFix2.insertAt, 'vue');
-				fixMap2.enable.push(message);
-				fixMap2.enable.text = theFix2.text;
-			}
+			const enableFix = insertCommentAboveLine(code, enableLine);
+			insertFix(message, enableFix.insertAt, 'vue', 'enable', enableFix.text);
 		}
 	}
 
