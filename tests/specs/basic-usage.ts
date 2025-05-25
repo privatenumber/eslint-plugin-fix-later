@@ -447,7 +447,8 @@ export default testSuite(({ describe }, eslintPath: string) => {
 							<!-- eslint-disable vue/no-deprecated-slot-attribute -- Fix later -->
 							<img slot="media">
 							<!-- eslint-enable vue/no-deprecated-slot-attribute -->
-					<!-- eslint-disable vue/no-deprecated-slot-attribute -- Fix later -->
+
+							<!-- eslint-disable vue/no-deprecated-slot-attribute -- Fix later -->
 							<img slot="media">
 						<!-- eslint-enable vue/no-deprecated-slot-attribute -->
 						</comp>
