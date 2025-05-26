@@ -14,14 +14,14 @@ import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
 
-type CommentTypes = 'js' | 'jsx' | 'vue';
-
 type Fixer = {
 	getInsertText: GetInsertText;
 	messages: LintMessage[];
 };
+
+type CommentSyntax = [open: string, close: string];
 type FixMap = {
-	type: CommentTypes;
+	syntax: CommentSyntax;
 	enable?: Fixer;
 	disable?: Fixer;
 	'disable-line'?: Fixer;
@@ -29,10 +29,11 @@ type FixMap = {
 };
 
 const commentSyntax = {
-	js: ['/*', '*/'],
+	jsInline: ['// ', ''],
+	jsBlock: ['/* ', ' */'],
 	vue: ['<!-- ', ' -->'],
-	jsx: ['{/*', '*/}'],
-};
+	jsx: ['{/* ', ' */}'],
+} satisfies Record<string, CommentSyntax>;
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
@@ -170,13 +171,13 @@ const suppressFileErrors = (
 
 	const insertFix = (
 		message: LintMessage,
-		type: CommentTypes,
+		syntax: CommentSyntax,
 		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
 		{ insertAt, getInsertText }: Fix,
 	) => {
 		let fixMap = fixesMap.get(insertAt);
 		if (!fixMap) {
-			fixMap = { type };
+			fixMap = { syntax };
 			fixesMap.set(insertAt, fixMap);
 		}
 
@@ -208,7 +209,7 @@ const suppressFileErrors = (
 					? insertCommentAboveLine(code, lineStart)
 					: insertCommentSameLine(code, lineStart)
 			);
-			insertFix(message, 'js', disableDirectiveKey, fix);
+			insertFix(message, commentSyntax.jsInline, disableDirectiveKey, fix);
 			continue;
 		}
 
@@ -221,14 +222,14 @@ const suppressFileErrors = (
 				column: 0,
 			});
 			const disableFix = insertCommentAboveLine(code, disableLine);
-			insertFix(message, 'vue', 'disable', disableFix);
+			insertFix(message, commentSyntax.vue, 'disable', disableFix);
 
 			const enableLine = sourceCode.getIndexFromLoc({
 				line: vueNode.loc.end.line + 1,
 				column: 0,
 			});
 			const enableFix = insertCommentAboveLine(code, enableLine);
-			insertFix(message, 'vue', 'enable', enableFix);
+			insertFix(message, commentSyntax.vue, 'enable', enableFix);
 		}
 	}
 
@@ -238,37 +239,35 @@ const suppressFileErrors = (
 		if (fix.enable) {
 			const rules = getRuleIds(fix.enable.messages);
 			comments.push(
-				fix.enable.getInsertText(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
+				fix.enable.getInsertText(`${fix.syntax[0]}eslint-enable ${rules}${fix.syntax[1]}`),
 			);
 		}
 		if (fix.disable) {
 			const { messages } = fix.disable;
 			const rules = getRuleIds(messages);
 			comments.push(
-				fix.disable.getInsertText(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(messages[0])}${commentSyntax[fix.type][1]}`),
+				fix.disable.getInsertText(`${fix.syntax[0]}eslint-disable ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
 			);
 		}
 		if (fix['disable-next-line']) {
 			const { messages } = fix['disable-next-line'];
 			const rules = getRuleIds(messages);
 			comments.push(
-				fix['disable-next-line'].getInsertText(`// eslint-disable-next-line ${rules} -- ${getLineComment(messages[0])}`),
+				fix['disable-next-line'].getInsertText(`${fix.syntax[0]}eslint-disable-next-line ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
 			);
 		}
 		if (fix['disable-line']) {
 			const { messages } = fix['disable-line'];
 			const rules = getRuleIds(messages);
 			comments.push(
-				fix['disable-line'].getInsertText(`// eslint-disable-line ${rules} -- ${getLineComment(messages[0])}`),
+				fix['disable-line'].getInsertText(`${fix.syntax[0]}eslint-disable-line ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
 			);
 		}
 
-		const fixObject = {
-			range: [insertAt, insertAt] as [number, number],
+		messages.push(createMessage({
+			range: [insertAt, insertAt],
 			text: comments.join('\n'),
-		};
-
-		messages.push(createMessage(fixObject));
+		}));
 	}
 
 	return messages;
