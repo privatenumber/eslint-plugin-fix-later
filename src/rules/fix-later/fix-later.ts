@@ -151,12 +151,17 @@ const suppressFileErrors = (
 	const preferAbove = ruleOptions.insertDisableComment === 'above-line';
 
 	type CommentTypes = 'js' | 'jsx' | 'vue';
+
+	type Fixer = {
+		getInsertText: (text: string) => string;
+		messages: LintMessage[];
+	};
 	type FixMap = {
 		type: CommentTypes;
-		enable?: LintMessage[];
-		disable?: LintMessage[];
-		'disable-line'?: LintMessage[];
-		'disable-next-line'?: LintMessage[];
+		enable?: Fixer;
+		disable?: Fixer;
+		'disable-line'?: Fixer;
+		'disable-next-line'?: Fixer;
 	};
 
 	const fixesMap = new Map<number, FixMap>();
@@ -178,17 +183,19 @@ const suppressFileErrors = (
 		insertAt: number,
 		type: CommentTypes,
 		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
-		text: string,
+		text: (comment: string) => string,
 	) => {
 		const fixMap = getOrCreateFixMap(insertAt, type);
 
 		let got = fixMap[directive];
 		if (!got) {
-			got = [];
-			got.text = text;
+			got = {
+				getInsertText: text,
+				messages: [],
+			};
 			fixMap[directive] = got;
 		}
-		got.push(message);
+		got.messages.push(message);
 	};
 
 	for (const message of processMessages) {
@@ -233,30 +240,30 @@ const suppressFileErrors = (
 		const comments = [];
 
 		if (fix.enable) {
-			const rules = getRuleIds(fix.enable).join(', ');
+			const rules = getRuleIds(fix.enable.messages).join(', ');
 			comments.push(
-				fix.enable.text(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
+				fix.enable.getInsertText(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix.disable) {
-			const [message] = fix.disable;
-			const rules = getRuleIds(fix.disable).join(', ');
+			const [message] = fix.disable.messages;
+			const rules = getRuleIds(fix.disable.messages).join(', ');
 			comments.push(
-				fix.disable.text(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
+				fix.disable.getInsertText(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix['disable-next-line']) {
-			const [message] = fix['disable-next-line'];
-			const rules = getRuleIds(fix['disable-next-line']).join(', ');
+			const [message] = fix['disable-next-line'].messages;
+			const rules = getRuleIds(fix['disable-next-line'].messages).join(', ');
 			comments.push(
-				fix['disable-next-line'].text(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
+				fix['disable-next-line'].getInsertText(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
 			);
 		}
 		if (fix['disable-line']) {
-			const [message] = fix['disable-line'];
-			const rules = getRuleIds(fix['disable-line']).join(', ');
+			const [message] = fix['disable-line'].messages;
+			const rules = getRuleIds(fix['disable-line'].messages).join(', ');
 			comments.push(
-				fix['disable-line'].text(`// eslint-disable-line ${rules} -- ${getLineComment(message)}`),
+				fix['disable-line'].getInsertText(`// eslint-disable-line ${rules} -- ${getLineComment(message)}`),
 			);
 		}
 
