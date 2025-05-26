@@ -66,9 +66,10 @@ const parseEslintDisableComment = (comment: string) => {
 	};
 };
 
-type Fix = {
+export type GetInsertText = (comment: string) => string;
+export type Fix = {
 	insertAt: number;
-	text: (comment: string) => string;
+	getInsertText: GetInsertText;
 };
 
 export const insertCommentAboveLine = (
@@ -86,7 +87,7 @@ export const insertCommentAboveLine = (
 			const insertAt = lastNewLine + 1 + commentBefore.index;
 			return {
 				insertAt,
-				text: (comment) => {
+				getInsertText: (comment) => {
 					const insertComment = parseEslintDisableComment(comment)!;
 					return `, ${insertComment.rules} -- ${insertComment.description}`;
 				},
@@ -96,7 +97,7 @@ export const insertCommentAboveLine = (
 
 	return {
 		insertAt: lineStart,
-		text: comment => `${indentation}${comment}\n`,
+		getInsertText: comment => `${indentation}${comment}\n`,
 	};
 };
 
@@ -119,7 +120,7 @@ export const insertCommentSameLine = (
 			const insertAt = lineStart + commentIndex + commentExists.index;
 			return {
 				insertAt,
-				text: (comment) => {
+				getInsertText: (comment) => {
 					const insertComment = parseEslintDisableComment(comment)!;
 					return `, ${insertComment.rules} -- ${insertComment.description}`;
 				},
@@ -135,6 +136,6 @@ export const insertCommentSameLine = (
 
 	return {
 		insertAt,
-		text: comment => ` ${comment}`,
+		getInsertText: comment => ` ${comment}`,
 	};
 };

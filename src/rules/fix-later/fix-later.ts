@@ -3,6 +3,8 @@ import { getSeverity } from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
 	insertCommentSameLine,
+	type GetInsertText,
+	type Fix,
 } from './utils/fixer.js';
 import { gitBlame, type GitBlame } from './utils/git.js';
 import { getCodeOwner } from './utils/codeowner.js';
@@ -11,6 +13,20 @@ import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 
 type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+
+type CommentTypes = 'js' | 'jsx' | 'vue';
+
+type Fixer = {
+	getInsertText: GetInsertText;
+	messages: LintMessage[];
+};
+type FixMap = {
+	type: CommentTypes;
+	enable?: Fixer;
+	disable?: Fixer;
+	'disable-line'?: Fixer;
+	'disable-next-line'?: Fixer;
+};
 
 const commentSyntax = {
 	js: ['/*', '*/'],
@@ -150,47 +166,24 @@ const suppressFileErrors = (
 		: 'disable-next-line';
 	const preferAbove = ruleOptions.insertDisableComment === 'above-line';
 
-	type CommentTypes = 'js' | 'jsx' | 'vue';
-
-	type Fixer = {
-		getInsertText: (text: string) => string;
-		messages: LintMessage[];
-	};
-	type FixMap = {
-		type: CommentTypes;
-		enable?: Fixer;
-		disable?: Fixer;
-		'disable-line'?: Fixer;
-		'disable-next-line'?: Fixer;
-	};
-
 	const fixesMap = new Map<number, FixMap>();
-
-	const getOrCreateFixMap = (
-		insertAt: number,
-		type: CommentTypes,
-	): FixMap => {
-		if (!fixesMap.has(insertAt)) {
-			fixesMap.set(insertAt, {
-				type,
-			});
-		}
-		return fixesMap.get(insertAt)!;
-	};
 
 	const insertFix = (
 		message: LintMessage,
-		insertAt: number,
 		type: CommentTypes,
 		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
-		text: (comment: string) => string,
+		{ insertAt, getInsertText }: Fix,
 	) => {
-		const fixMap = getOrCreateFixMap(insertAt, type);
+		let fixMap = fixesMap.get(insertAt);
+		if (!fixMap) {
+			fixMap = { type };
+			fixesMap.set(insertAt, fixMap);
+		}
 
 		let got = fixMap[directive];
 		if (!got) {
 			got = {
-				getInsertText: text,
+				getInsertText,
 				messages: [],
 			};
 			fixMap[directive] = got;
@@ -210,8 +203,12 @@ const suppressFileErrors = (
 				line: message.line,
 				column: 0,
 			});
-			const fix = preferAbove ? insertCommentAboveLine(code, lineStart) : insertCommentSameLine(code, lineStart);
-			insertFix(message, fix.insertAt, 'js', disableDirectiveKey, fix.text);
+			const fix = (
+				preferAbove
+					? insertCommentAboveLine(code, lineStart)
+					: insertCommentSameLine(code, lineStart)
+			);
+			insertFix(message, 'js', disableDirectiveKey, fix);
 			continue;
 		}
 
@@ -229,10 +226,10 @@ const suppressFileErrors = (
 			});
 
 			const disableFix = insertCommentAboveLine(code, disableLine);
-			insertFix(message, disableFix.insertAt, 'vue', 'disable', disableFix.text);
+			insertFix(message, 'vue', 'disable', disableFix);
 
 			const enableFix = insertCommentAboveLine(code, enableLine);
-			insertFix(message, enableFix.insertAt, 'vue', 'enable', enableFix.text);
+			insertFix(message, 'vue', 'enable', enableFix);
 		}
 	}
 
