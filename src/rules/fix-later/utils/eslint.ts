@@ -1,5 +1,9 @@
 import type { Linter } from 'eslint';
 
+export type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+
+export type Fix = boolean | ((message: LintMessage) => boolean) | undefined;
+
 export const getSeverity = (
 	ruleLevel: Linter.RuleLevel,
 ) => {

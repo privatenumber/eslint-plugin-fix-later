@@ -1,18 +1,15 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
-import { getSeverity } from './utils/eslint.js';
+import { getSeverity, type LintMessage, type Fix } from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
 	insertCommentSameLine,
 	type GetInsertText,
-	type Fix,
+	type FixData,
 } from './utils/fixer.js';
-import { gitBlame, type GitBlame } from './utils/git.js';
-import { getCodeOwner } from './utils/codeowner.js';
-import { interpolateString } from './utils/interpolate-string.js';
 import { ruleId, ruleOptions } from './rule-meta.js';
 import { getVueElementNodeByRangeIndex } from './utils/vue.js';
-
-type LintMessage = Linter.LintMessage | Linter.SuppressedLintMessage;
+import { createCommentDescription, type GetCommentDescription } from './utils/comment-description.js';
+import { filterMessages } from './utils/filter-messages.js';
 
 type Fixer = {
 	getInsertText: GetInsertText;
@@ -40,6 +37,8 @@ const groupMessagesByFix = (
 	code: string,
 	messages: LintMessage[],
 	disableDirective: string,
+	ruleSeverity: Linter.Severity,
+	getCommentDescription: GetCommentDescription,
 ) => {
 	const disableDirectiveKey = disableDirective === 'eslint-disable-line'
 		? 'disable-line'
@@ -51,7 +50,7 @@ const groupMessagesByFix = (
 		message: LintMessage,
 		syntax: CommentSyntax,
 		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
-		{ insertAt, getInsertText }: Fix,
+		{ insertAt, getInsertText }: FixData,
 	) => {
 		let fixMap = fixesMap.get(insertAt);
 		if (!fixMap) {
@@ -111,10 +110,59 @@ const groupMessagesByFix = (
 		}
 	}
 
-	return fixesMap;
-};
+	const asdf: LintMessage[] = [];
+	for (const [insertAt, fix] of fixesMap) {
+		const comments = [];
 
-const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
+		if (fix.enable) {
+			const rules = getRuleIds(fix.enable.messages);
+			comments.push(
+				fix.enable.getInsertText(`${fix.syntax[0]}eslint-enable ${rules}${fix.syntax[1]}`),
+			);
+		}
+		if (fix.disable) {
+			const { messages } = fix.disable;
+			const rules = getRuleIds(messages);
+			comments.push(
+				fix.disable.getInsertText(`${fix.syntax[0]}eslint-disable ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
+			);
+		}
+		if (fix['disable-next-line']) {
+			const { messages } = fix['disable-next-line'];
+			const rules = getRuleIds(messages);
+			comments.push(
+				fix['disable-next-line'].getInsertText(`${fix.syntax[0]}eslint-disable-next-line ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
+			);
+		}
+		if (fix['disable-line']) {
+			const { messages } = fix['disable-line'];
+			const rules = getRuleIds(messages);
+			comments.push(
+				fix['disable-line'].getInsertText(`${fix.syntax[0]}eslint-disable-line ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
+			);
+		}
+
+		asdf.push({
+			/**
+			 * Not specifiying a ruleId allows us to only apply this fix
+			 * when --fix-type=directive is passed in
+			 *
+			 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
+			 */
+			ruleId: null,
+			severity: ruleSeverity,
+			message: '',
+			line: 0,
+			column: 0,
+			fix: {
+				range: [insertAt, insertAt],
+				text: comments.join('\n'),
+			},
+		});
+	}
+
+	return asdf;
+};
 
 const getRuleIds = (
 	lintMessages: LintMessage[],
@@ -135,7 +183,7 @@ const suppressFileErrors = (
 	messages: LintMessage[],
 	{ fix, filename }: {
 		filename?: string;
-		fix?: boolean | ((message: LintMessage) => boolean);
+		fix?: Fix;
 	},
 ) => {
 	if (!ruleId || !ruleOptions) {
@@ -146,143 +194,26 @@ const suppressFileErrors = (
 	if (!ruleConfig) {
 		return messages;
 	}
-	const ruleLevel = Array.isArray(ruleConfig) ? ruleConfig[0] : ruleConfig;
-	const ruleSeverity = getSeverity(ruleLevel);
+	const ruleSeverity = getSeverity(Array.isArray(ruleConfig) ? ruleConfig[0] : ruleConfig);
 
-	let processMessages = messages
-		.filter(message => (
-			// Errors like parsing errors don't have rule IDs
-			message.ruleId
-
-			// Don't suppress itself
-			&& message.ruleId !== ruleId
-
-			// Filter out missing rule errors
-			&& !allowedErrorPattern.test(message.message)
-
-			// Filter out errors that are already suppressed
-			&& (
-				!('suppressions' in message)
-				|| message.suppressions.length === 0
-			)
-		));
-
-	if (!ruleOptions.includeWarnings) {
-		processMessages = processMessages.filter(({ severity }) => severity > 1);
-	}
-
-	// If applying fix, only suppress errors that can't be fixed
-	if (fix) {
-		processMessages = processMessages.filter(message => (
-			!message.fix
-
-			// Filter that applies `--fix-type`
-			|| (typeof fix === 'function' && !fix(message))
-		));
-	} else {
-		const suppressableMessages = processMessages.filter(message => !message.fix);
-
-		if (suppressableMessages.length > 0) {
-			messages.push({
-				ruleId,
-				severity: ruleSeverity,
-				message: `${suppressableMessages.length} suppressable errors (suppress with --fix)`,
-				line: 0,
-				column: 0,
-			});
-		}
-
-		return messages;
-	}
-
+	const processMessages = filterMessages(
+		messages,
+		ruleOptions.includeWarnings,
+		fix,
+		ruleSeverity,
+	);
 	if (processMessages.length === 0) {
 		return messages;
 	}
 
-	const { commentTemplate } = ruleOptions;
-	const getLineComment = (
-		message: LintMessage,
-	): string => {
-		let blameData: GitBlame | undefined;
-		const comment = interpolateString(
-			commentTemplate,
-			{
-				get blame() {
-					if (filename && !blameData) {
-						blameData = gitBlame(filename, message.line, message.endLine ?? message.line);
-					}
-					return blameData;
-				},
-				get codeowner() {
-					if (filename) {
-						return getCodeOwner(filename);
-					}
-				},
-			},
-			(_match, key) => {
-				throw new Error(`Can't find key: ${key}`);
-			},
-		);
-
-		return comment;
-	};
-
-	const fixesMap = groupMessagesByFix(
+	messages.push(...groupMessagesByFix(
 		sourceCode,
 		code,
 		processMessages,
 		ruleOptions.disableDirective,
-	);
-
-	for (const [insertAt, fix] of fixesMap) {
-		const comments = [];
-
-		if (fix.enable) {
-			const rules = getRuleIds(fix.enable.messages);
-			comments.push(
-				fix.enable.getInsertText(`${fix.syntax[0]}eslint-enable ${rules}${fix.syntax[1]}`),
-			);
-		}
-		if (fix.disable) {
-			const { messages } = fix.disable;
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix.disable.getInsertText(`${fix.syntax[0]}eslint-disable ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
-			);
-		}
-		if (fix['disable-next-line']) {
-			const { messages } = fix['disable-next-line'];
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix['disable-next-line'].getInsertText(`${fix.syntax[0]}eslint-disable-next-line ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
-			);
-		}
-		if (fix['disable-line']) {
-			const { messages } = fix['disable-line'];
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix['disable-line'].getInsertText(`${fix.syntax[0]}eslint-disable-line ${rules} -- ${getLineComment(messages[0])}${fix.syntax[1]}`),
-			);
-		}
-
-		messages.push({
-			/**
-			 * Not specifiying a ruleId allows us to only apply this fix
-			 * when --fix-type=directive is passed in
-			 *
-			 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
-			 */
-			ruleId: null,
-			severity: ruleSeverity,
-			message: '',
-			line: 0,
-			column: 0,
-			fix: {
-				range: [insertAt, insertAt],
-				text: comments.join('\n'),
-			},
-		});
-	}
+		ruleSeverity,
+		createCommentDescription(ruleOptions.commentTemplate, filename),
+	));
 
 	return messages;
 };

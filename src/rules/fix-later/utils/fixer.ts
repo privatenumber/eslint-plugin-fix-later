@@ -67,7 +67,7 @@ const parseEslintDisableComment = (comment: string) => {
 };
 
 export type GetInsertText = (comment: string) => string;
-export type Fix = {
+export type FixData = {
 	insertAt: number;
 	getInsertText: GetInsertText;
 };
@@ -75,7 +75,7 @@ export type Fix = {
 export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
-): Fix => {
+): FixData => {
 	const indentation = code.slice(lineStart).match(tabOrSpaces)![0];
 	const codeBefore = code.slice(0, lineStart - 1);
 	const lastNewLine = codeBefore.lastIndexOf('\n');
@@ -104,7 +104,7 @@ export const insertCommentAboveLine = (
 export const insertCommentSameLine = (
 	code: string,
 	lineStart: number,
-): Fix => {
+): FixData => {
 	const codeFromLine = code.slice(lineStart);
 	const nextLineIndex = codeFromLine.indexOf('\n');
 	const lineCode = codeFromLine.slice(0, (
