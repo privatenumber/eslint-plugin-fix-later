@@ -220,14 +220,13 @@ const suppressFileErrors = (
 				line: vueNode.loc.start.line,
 				column: 0,
 			});
+			const disableFix = insertCommentAboveLine(code, disableLine);
+			insertFix(message, 'vue', 'disable', disableFix);
+
 			const enableLine = sourceCode.getIndexFromLoc({
 				line: vueNode.loc.end.line + 1,
 				column: 0,
 			});
-
-			const disableFix = insertCommentAboveLine(code, disableLine);
-			insertFix(message, 'vue', 'disable', disableFix);
-
 			const enableFix = insertCommentAboveLine(code, enableLine);
 			insertFix(message, 'vue', 'enable', enableFix);
 		}
