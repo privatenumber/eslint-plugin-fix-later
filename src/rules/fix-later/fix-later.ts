@@ -29,7 +29,7 @@ const getRuleIds = (
 			ruleIds.add(message.ruleId);
 		}
 	}
-	return Array.from(ruleIds);
+	return Array.from(ruleIds).join(', ');
 };
 
 const suppressFileErrors = (
@@ -240,30 +240,30 @@ const suppressFileErrors = (
 		const comments = [];
 
 		if (fix.enable) {
-			const rules = getRuleIds(fix.enable.messages).join(', ');
+			const rules = getRuleIds(fix.enable.messages);
 			comments.push(
 				fix.enable.getInsertText(`${commentSyntax[fix.type][0]}eslint-enable ${rules}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix.disable) {
-			const [message] = fix.disable.messages;
-			const rules = getRuleIds(fix.disable.messages).join(', ');
+			const { messages } = fix.disable;
+			const rules = getRuleIds(messages);
 			comments.push(
-				fix.disable.getInsertText(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(message)}${commentSyntax[fix.type][1]}`),
+				fix.disable.getInsertText(`${commentSyntax[fix.type][0]}eslint-disable ${rules} -- ${getLineComment(messages[0])}${commentSyntax[fix.type][1]}`),
 			);
 		}
 		if (fix['disable-next-line']) {
-			const [message] = fix['disable-next-line'].messages;
-			const rules = getRuleIds(fix['disable-next-line'].messages).join(', ');
+			const { messages } = fix['disable-next-line'];
+			const rules = getRuleIds(messages);
 			comments.push(
-				fix['disable-next-line'].getInsertText(`// eslint-disable-next-line ${rules} -- ${getLineComment(message)}`),
+				fix['disable-next-line'].getInsertText(`// eslint-disable-next-line ${rules} -- ${getLineComment(messages[0])}`),
 			);
 		}
 		if (fix['disable-line']) {
-			const [message] = fix['disable-line'].messages;
-			const rules = getRuleIds(fix['disable-line'].messages).join(', ');
+			const { messages } = fix['disable-line'];
+			const rules = getRuleIds(messages);
 			comments.push(
-				fix['disable-line'].getInsertText(`// eslint-disable-line ${rules} -- ${getLineComment(message)}`),
+				fix['disable-line'].getInsertText(`// eslint-disable-line ${rules} -- ${getLineComment(messages[0])}`),
 			);
 		}
 
