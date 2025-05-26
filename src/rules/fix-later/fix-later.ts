@@ -1,4 +1,4 @@
-import eslint, { type Linter, type Rule, type SourceCode } from 'eslint';
+import eslint, { type Linter, type SourceCode } from 'eslint';
 import { getSeverity } from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
@@ -34,6 +34,85 @@ const commentSyntax = {
 	vue: ['<!-- ', ' -->'],
 	jsx: ['{/* ', ' */}'],
 } satisfies Record<string, CommentSyntax>;
+
+const groupMessagesByFix = (
+	sourceCode: SourceCode,
+	code: string,
+	messages: LintMessage[],
+	disableDirective: string,
+) => {
+	const disableDirectiveKey = disableDirective === 'eslint-disable-line'
+		? 'disable-line'
+		: 'disable-next-line';
+
+	const fixesMap = new Map<number, FixMap>();
+
+	const insertFix = (
+		message: LintMessage,
+		syntax: CommentSyntax,
+		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
+		{ insertAt, getInsertText }: Fix,
+	) => {
+		let fixMap = fixesMap.get(insertAt);
+		if (!fixMap) {
+			fixMap = { syntax };
+			fixesMap.set(insertAt, fixMap);
+		}
+
+		let got = fixMap[directive];
+		if (!got) {
+			got = {
+				getInsertText,
+				messages: [],
+			};
+			fixMap[directive] = got;
+		}
+		got.messages.push(message);
+	};
+
+	for (const message of messages) {
+		const index = sourceCode.getIndexFromLoc({
+			line: message.line,
+			column: message.column - 1,
+		});
+		const node = sourceCode.getNodeByRangeIndex(index);
+
+		if (node) {
+			const lineStart = sourceCode.getIndexFromLoc({
+				line: message.line,
+				column: 0,
+			});
+			const fix = (
+				disableDirectiveKey === 'disable-next-line'
+					? insertCommentAboveLine(code, lineStart)
+					: insertCommentSameLine(code, lineStart)
+			);
+			insertFix(message, commentSyntax.jsInline, disableDirectiveKey, fix);
+			continue;
+		}
+
+		const vueFrag = sourceCode.parserServices.getDocumentFragment?.();
+		const vueNode = getVueElementNodeByRangeIndex(index, vueFrag);
+
+		if (vueNode) {
+			const disableLine = sourceCode.getIndexFromLoc({
+				line: vueNode.loc.start.line,
+				column: 0,
+			});
+			const disableFix = insertCommentAboveLine(code, disableLine);
+			insertFix(message, commentSyntax.vue, 'disable', disableFix);
+
+			const enableLine = sourceCode.getIndexFromLoc({
+				line: vueNode.loc.end.line + 1,
+				column: 0,
+			});
+			const enableFix = insertCommentAboveLine(code, enableLine);
+			insertFix(message, commentSyntax.vue, 'enable', enableFix);
+		}
+	}
+
+	return fixesMap;
+};
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
@@ -120,21 +199,6 @@ const suppressFileErrors = (
 		return messages;
 	}
 
-	const createMessage = (fix: Rule.Fix): LintMessage => ({
-		/**
-		 * Not specifiying a ruleId allows us to only apply this fix
-		 * when --fix-type=directive is passed in
-		 *
-		 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
-		 */
-		ruleId: null,
-		severity: ruleSeverity,
-		message: '',
-		line: 0,
-		column: 0,
-		fix,
-	});
-
 	const { commentTemplate } = ruleOptions;
 	const getLineComment = (
 		message: LintMessage,
@@ -162,76 +226,13 @@ const suppressFileErrors = (
 
 		return comment;
 	};
-	const disableDirectiveKey = ruleOptions!.disableDirective === 'eslint-disable-line'
-		? 'disable-line'
-		: 'disable-next-line';
-	const preferAbove = ruleOptions.insertDisableComment === 'above-line';
 
-	const fixesMap = new Map<number, FixMap>();
-
-	const insertFix = (
-		message: LintMessage,
-		syntax: CommentSyntax,
-		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
-		{ insertAt, getInsertText }: Fix,
-	) => {
-		let fixMap = fixesMap.get(insertAt);
-		if (!fixMap) {
-			fixMap = { syntax };
-			fixesMap.set(insertAt, fixMap);
-		}
-
-		let got = fixMap[directive];
-		if (!got) {
-			got = {
-				getInsertText,
-				messages: [],
-			};
-			fixMap[directive] = got;
-		}
-		got.messages.push(message);
-	};
-
-	for (const message of processMessages) {
-		const index = sourceCode.getIndexFromLoc({
-			line: message.line,
-			column: message.column - 1,
-		});
-		const node = sourceCode.getNodeByRangeIndex(index);
-
-		if (node) {
-			const lineStart = sourceCode.getIndexFromLoc({
-				line: message.line,
-				column: 0,
-			});
-			const fix = (
-				preferAbove
-					? insertCommentAboveLine(code, lineStart)
-					: insertCommentSameLine(code, lineStart)
-			);
-			insertFix(message, commentSyntax.jsInline, disableDirectiveKey, fix);
-			continue;
-		}
-
-		const vueFrag = sourceCode.parserServices.getDocumentFragment?.();
-		const vueNode = getVueElementNodeByRangeIndex(index, vueFrag);
-
-		if (vueNode) {
-			const disableLine = sourceCode.getIndexFromLoc({
-				line: vueNode.loc.start.line,
-				column: 0,
-			});
-			const disableFix = insertCommentAboveLine(code, disableLine);
-			insertFix(message, commentSyntax.vue, 'disable', disableFix);
-
-			const enableLine = sourceCode.getIndexFromLoc({
-				line: vueNode.loc.end.line + 1,
-				column: 0,
-			});
-			const enableFix = insertCommentAboveLine(code, enableLine);
-			insertFix(message, commentSyntax.vue, 'enable', enableFix);
-		}
-	}
+	const fixesMap = groupMessagesByFix(
+		sourceCode,
+		code,
+		processMessages,
+		ruleOptions.disableDirective,
+	);
 
 	for (const [insertAt, fix] of fixesMap) {
 		const comments = [];
@@ -264,10 +265,23 @@ const suppressFileErrors = (
 			);
 		}
 
-		messages.push(createMessage({
-			range: [insertAt, insertAt],
-			text: comments.join('\n'),
-		}));
+		messages.push({
+			/**
+			 * Not specifiying a ruleId allows us to only apply this fix
+			 * when --fix-type=directive is passed in
+			 *
+			 * https://github.com/eslint/eslint/blob/v8.0.0/lib/cli-engine/cli-engine.js#L342-L344
+			 */
+			ruleId: null,
+			severity: ruleSeverity,
+			message: '',
+			line: 0,
+			column: 0,
+			fix: {
+				range: [insertAt, insertAt],
+				text: comments.join('\n'),
+			},
+		});
 	}
 
 	return messages;
