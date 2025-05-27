@@ -1,5 +1,3 @@
-import type { Rule } from 'eslint';
-
 /**
  * Regex to only match a sequence of tabs or spaces (not both)
  * \s is not used because it can include new lines which we don't want
@@ -17,6 +15,7 @@ const getCommentIndex = (code: string) => {
 
 const eslintDisableNextLine = 'eslint-disable-next-line';
 const eslintDisableSameLine = 'eslint-disable-line';
+// TODO: support enable and disable
 const getDisableDirectiveIndex = (comment: string) => {
 	const nextLineIndex = comment.indexOf(eslintDisableNextLine);
 	if (nextLineIndex !== -1) {
@@ -67,13 +66,17 @@ const parseEslintDisableComment = (comment: string) => {
 	};
 };
 
+export type GetInsertText = (comment: string) => string;
+export type FixData = {
+	insertAt: number;
+	getInsertText: GetInsertText;
+};
+
 export const insertCommentAboveLine = (
 	code: string,
 	lineStart: number,
-	comment: string,
-): Rule.Fix => {
+): FixData => {
 	const indentation = code.slice(lineStart).match(tabOrSpaces)![0];
-
 	const codeBefore = code.slice(0, lineStart - 1);
 	const lastNewLine = codeBefore.lastIndexOf('\n');
 	if (lastNewLine !== -1) {
@@ -81,26 +84,27 @@ export const insertCommentAboveLine = (
 		const commentBefore = parseEslintDisableComment(lineBefore);
 
 		if (commentBefore) {
-			const insertComment = parseEslintDisableComment(comment)!;
 			const insertAt = lastNewLine + 1 + commentBefore.index;
 			return {
-				range: [insertAt, insertAt],
-				text: `, ${insertComment.rules} -- ${insertComment.description}`,
+				insertAt,
+				getInsertText: (comment) => {
+					const insertComment = parseEslintDisableComment(comment)!;
+					return `, ${insertComment.rules} -- ${insertComment.description}`;
+				},
 			};
 		}
 	}
 
 	return {
-		range: [lineStart, lineStart],
-		text: `${indentation}${comment}\n`,
+		insertAt: lineStart,
+		getInsertText: comment => `${indentation}${comment}\n`,
 	};
 };
 
 export const insertCommentSameLine = (
 	code: string,
 	lineStart: number,
-	comment: string,
-): Rule.Fix => {
+): FixData => {
 	const codeFromLine = code.slice(lineStart);
 	const nextLineIndex = codeFromLine.indexOf('\n');
 	const lineCode = codeFromLine.slice(0, (
@@ -111,15 +115,15 @@ export const insertCommentSameLine = (
 
 	const commentIndex = getCommentIndex(lineCode);
 	if (commentIndex !== -1) {
-		const commentBefore = parseEslintDisableComment(lineCode.slice(commentIndex));
-
-		if (commentBefore) {
-			const insertAt = lineStart + commentIndex + commentBefore.index;
-			const insertComment = parseEslintDisableComment(comment)!;
-
+		const commentExists = parseEslintDisableComment(lineCode.slice(commentIndex));
+		if (commentExists) {
+			const insertAt = lineStart + commentIndex + commentExists.index;
 			return {
-				range: [insertAt, insertAt],
-				text: `, ${insertComment.rules} -- ${insertComment.description}`,
+				insertAt,
+				getInsertText: (comment) => {
+					const insertComment = parseEslintDisableComment(comment)!;
+					return `, ${insertComment.rules} -- ${insertComment.description}`;
+				},
 			};
 		}
 	}
@@ -131,7 +135,7 @@ export const insertCommentSameLine = (
 	);
 
 	return {
-		range: [insertAt, insertAt],
-		text: ` ${comment}`,
+		insertAt,
+		getInsertText: comment => ` ${comment}`,
 	};
 };
