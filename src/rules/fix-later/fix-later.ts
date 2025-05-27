@@ -1,5 +1,7 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
-import { getSeverity, type LintMessage, type Fix, type Directives, type InlineDirectives, directives } from './utils/eslint.js';
+import {
+	getSeverity, type LintMessage, type Fix, type Directives, type InlineDirectives, directives,
+} from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
 	insertCommentSameLine,
@@ -26,7 +28,7 @@ type Fixer = {
 
 type FixMap = {
 	syntax: CommentSyntax;
-} & { [directive in Directives]?: Fixer; }
+} & { [directive in Directives]?: Fixer; };
 
 const getFixLaterMessages = (
 	sourceCode: SourceCode,
@@ -79,7 +81,7 @@ const getFixLaterMessages = (
 					commentSyntax.jsInline,
 					'disable-next-line',
 					insertCommentAboveLine(code, lineStart),
-				)
+				);
 			} else {
 				insertFix(
 					message,

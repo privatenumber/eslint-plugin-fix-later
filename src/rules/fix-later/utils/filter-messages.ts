@@ -1,6 +1,6 @@
 import type { Linter } from 'eslint';
-import type { LintMessage, Fix } from './eslint.js';
 import { ruleId } from '../rule-meta.js';
+import type { LintMessage, Fix } from './eslint.js';
 
 const allowedErrorPattern = /^Definition for rule '[^']+' was not found\.$/;
 
