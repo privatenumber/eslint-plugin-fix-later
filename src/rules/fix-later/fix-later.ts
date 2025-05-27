@@ -43,7 +43,12 @@ const suppressFileErrors = (
 		processMessages,
 		ruleOptions.insertDisableComment,
 		ruleSeverity,
-		extractedConfig.parserOptions?.ecmaFeatures?.jsx,
+		(
+			'languageOptions' in extractedConfig
+				// @ts-expect-error ESLint v9
+				? extractedConfig.languageOptions.parserOptions.ecmaFeatures.jsx
+				: extractedConfig.parserOptions?.ecmaFeatures?.jsx
+		),
 		createCommentDescription(ruleOptions.commentTemplate, filename),
 	));
 

@@ -406,11 +406,6 @@ export default testSuite(({ describe }, eslintPath: string) => {
 				fix: true,
 			});
 
-			console.log({
-				messages: result.messages,
-				output: result.output,
-			});
-						
 			expect(result.errorCount).toBe(0);
 			expect(result.output).toBe(
 				outdent`

@@ -153,7 +153,6 @@ export const getFixLaterMessages = (
 						);
 						continue;
 					}
-
 				}
 
 				// type JSXElement = {
