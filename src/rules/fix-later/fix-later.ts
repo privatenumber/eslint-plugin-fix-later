@@ -1,5 +1,5 @@
 import eslint, { type Linter, type SourceCode } from 'eslint';
-import { getSeverity, type LintMessage, type Fix } from './utils/eslint.js';
+import { getSeverity, type LintMessage, type Fix, type Directives, type InlineDirectives, directives } from './utils/eslint.js';
 import {
 	insertCommentAboveLine,
 	insertCommentSameLine,
@@ -11,20 +11,7 @@ import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 import { createCommentDescription, type GetCommentDescription } from './utils/comment-description.js';
 import { filterMessages } from './utils/filter-messages.js';
 
-type Fixer = {
-	getInsertText: GetInsertText;
-	messages: LintMessage[];
-};
-
 type CommentSyntax = [open: string, close: string];
-type FixMap = {
-	syntax: CommentSyntax;
-	enable?: Fixer;
-	disable?: Fixer;
-	'disable-line'?: Fixer;
-	'disable-next-line'?: Fixer;
-};
-
 const commentSyntax = {
 	jsInline: ['// ', ''],
 	jsBlock: ['/* ', ' */'],
@@ -32,24 +19,29 @@ const commentSyntax = {
 	jsx: ['{/* ', ' */}'],
 } satisfies Record<string, CommentSyntax>;
 
-const groupMessagesByFix = (
+type Fixer = {
+	getInsertText: GetInsertText;
+	messages: LintMessage[];
+};
+
+type FixMap = {
+	syntax: CommentSyntax;
+} & { [directive in Directives]?: Fixer; }
+
+const getFixLaterMessages = (
 	sourceCode: SourceCode,
 	code: string,
 	messages: LintMessage[],
-	disableDirective: string,
+	disableDirective: InlineDirectives,
 	ruleSeverity: Linter.Severity,
 	getCommentDescription: GetCommentDescription,
 ) => {
-	const disableDirectiveKey = disableDirective === 'eslint-disable-line'
-		? 'disable-line'
-		: 'disable-next-line';
-
 	const fixesMap = new Map<number, FixMap>();
 
 	const insertFix = (
 		message: LintMessage,
 		syntax: CommentSyntax,
-		directive: 'disable' | 'enable' | 'disable-line' | 'disable-next-line',
+		directive: Directives,
 		{ insertAt, getInsertText }: FixData,
 	) => {
 		let fixMap = fixesMap.get(insertAt);
@@ -82,11 +74,11 @@ const groupMessagesByFix = (
 				column: 0,
 			});
 			const fix = (
-				disableDirectiveKey === 'disable-next-line'
+				disableDirective === 'disable-next-line'
 					? insertCommentAboveLine(code, lineStart)
 					: insertCommentSameLine(code, lineStart)
 			);
-			insertFix(message, commentSyntax.jsInline, disableDirectiveKey, fix);
+			insertFix(message, commentSyntax.jsInline, disableDirective, fix);
 			continue;
 		}
 
@@ -110,39 +102,25 @@ const groupMessagesByFix = (
 		}
 	}
 
-	const asdf: LintMessage[] = [];
+	const fixLaterMessages: LintMessage[] = [];
 	for (const [insertAt, fix] of fixesMap) {
 		const comments = [];
+		for (const directive of directives) {
+			const fixDirective = fix[directive];
+			if (fixDirective) {
+				const { messages, getInsertText } = fixDirective;
+				const rules = getRuleIds(messages);
 
-		if (fix.enable) {
-			const rules = getRuleIds(fix.enable.messages);
-			comments.push(
-				fix.enable.getInsertText(`${fix.syntax[0]}eslint-enable ${rules}${fix.syntax[1]}`),
-			);
-		}
-		if (fix.disable) {
-			const { messages } = fix.disable;
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix.disable.getInsertText(`${fix.syntax[0]}eslint-disable ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
-			);
-		}
-		if (fix['disable-next-line']) {
-			const { messages } = fix['disable-next-line'];
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix['disable-next-line'].getInsertText(`${fix.syntax[0]}eslint-disable-next-line ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
-			);
-		}
-		if (fix['disable-line']) {
-			const { messages } = fix['disable-line'];
-			const rules = getRuleIds(messages);
-			comments.push(
-				fix['disable-line'].getInsertText(`${fix.syntax[0]}eslint-disable-line ${rules} -- ${getCommentDescription(messages[0])}${fix.syntax[1]}`),
-			);
+				let comment = `eslint-${directive} ${rules}`;
+				if (directive !== 'enable') {
+					comment += ` -- ${getCommentDescription(messages[0])}`;
+				}
+
+				comments.push(getInsertText(`${fix.syntax[0]}${comment}${fix.syntax[1]}`));
+			}
 		}
 
-		asdf.push({
+		fixLaterMessages.push({
 			/**
 			 * Not specifiying a ruleId allows us to only apply this fix
 			 * when --fix-type=directive is passed in
@@ -161,7 +139,7 @@ const groupMessagesByFix = (
 		});
 	}
 
-	return asdf;
+	return fixLaterMessages;
 };
 
 const getRuleIds = (
@@ -206,7 +184,7 @@ const suppressFileErrors = (
 		return messages;
 	}
 
-	messages.push(...groupMessagesByFix(
+	messages.push(...getFixLaterMessages(
 		sourceCode,
 		code,
 		processMessages,
