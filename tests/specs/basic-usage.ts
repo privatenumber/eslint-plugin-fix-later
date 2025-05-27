@@ -446,44 +446,43 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			);
 		});
 
-		// test('jsx element', async () => {
-		// 	const content = outdent`
-		// 	(
-		// 		<div>
-		// 			Here is a
-		// 			<a>link</a>
-		// 		</div>
-		// 	);
-		// 	`;
+		test('jsx element', async () => {
+			const content = outdent`
+			(
+				<div>
+					Here is a
+					<a>link</a>
+				</div>
+			);
+			`;
 
-		// 	const result = await eslintWithCode(eslintPath, {
-		// 		config: {
-		// 			plugins: ['@stylistic/jsx'],
-		// 			rules: {
-		// 				'@stylistic/jsx/jsx-child-element-spacing': 'error',
-		// 				'fix-later/fix-later': ['error'],
-		// 			},
-		// 		},
-		// 		code: {
-		// 			name: 'FileA.js',
-		// 			content,
-		// 		},
-		// 		fix: true,
-		// 	});
+			const result = await eslintWithCode(eslintPath, {
+				config: {
+					plugins: ['@stylistic/jsx'],
+					rules: {
+						'@stylistic/jsx/jsx-child-element-spacing': 'error',
+						'fix-later/fix-later': ['error'],
+					},
+				},
+				code: {
+					name: 'FileA.js',
+					content,
+				},
+				fix: true,
+			});
 
-		// 	// expect(result.errorCount).toBe(0);
-		// 	expect(result.output).toBe(
-		// 		outdent`
-		// 		(
-		// 			<div>
-		// 				Here is a
-		// 				{ /* eslint-disable-next-line */ }
-		// 				<a>link</a>
-		// 			</div>
-		// 		);
-		// 		`,
-		// 	);
-		// });
+			// expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(
+				outdent`
+				(
+					<div>
+						Here is a
+						{/* eslint-disable @stylistic/jsx/jsx-child-element-spacing -- Fix later */}<a>link</a>{/* eslint-enable @stylistic/jsx/jsx-child-element-spacing */}
+					</div>
+				);
+				`,
+			);
+		});
 
 		test('vue', async () => {
 			const result = await eslintWithCode(eslintPath, {

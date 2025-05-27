@@ -155,37 +155,37 @@ export const getFixLaterMessages = (
 					}
 				}
 
-				// type JSXElement = {
-				// 	type: string;
-				// 	openingElement: {
-				// 		start: number;
-				// 	};
-				// 	closingElement: {
-				// 		end: number;
-				// 	};
-				// };
-				// const inJsx = findNodeParent(node as JSXElement, ['JSXElement', 'JSXFragment']);
-				// if (inJsx) {
-				// 	insertFix(
-				// 		message,
-				// 		commentSyntax.jsx,
-				// 		'disable',
-				// 		{
-				// 			insertAt: inJsx.openingElement.start,
-				// 			getInsertText: comment => comment,
-				// 		},
-				// 	);
-				// 	insertFix(
-				// 		message,
-				// 		commentSyntax.jsx,
-				// 		'enable',
-				// 		{
-				// 			insertAt: inJsx.closingElement.end,
-				// 			getInsertText: comment => comment,
-				// 		},
-				// 	);
-				// 	continue;
-				// }
+				type JSXElement = {
+					type: string;
+					openingElement: {
+						start: number;
+					};
+					closingElement: {
+						end: number;
+					};
+				};
+				const inJsx = findNodeParent(node as JSXElement, ['JSXElement', 'JSXFragment']);
+				if (inJsx) {
+					insertFix(
+						message,
+						commentSyntax.jsx,
+						'disable',
+						{
+							insertAt: inJsx.openingElement.start,
+							getInsertText: comment => comment,
+						},
+					);
+					insertFix(
+						message,
+						commentSyntax.jsx,
+						'enable',
+						{
+							insertAt: inJsx.closingElement.end,
+							getInsertText: comment => comment,
+						},
+					);
+					continue;
+				}
 			}
 
 			const lineStart = sourceCode.getIndexFromLoc({
