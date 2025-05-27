@@ -1,9 +1,10 @@
 import { name } from '../../../package.json';
 
+export type InsertDisableComment = 'above-line' | 'end-of-line';
+
 type RuleOptions = {
 	includeWarnings: boolean;
-	insertDisableComment: 'above-line' | 'end-of-line';
-	disableDirective: 'disable-line' | 'disable-next-line';
+	insertDisableComment: InsertDisableComment;
 	commentTemplate: string;
 };
 
@@ -24,11 +25,6 @@ export const normalizeOptions = (
 	return {
 		includeWarnings: options?.includeWarnings ?? false,
 		insertDisableComment,
-		disableDirective: (
-			insertDisableComment === 'above-line'
-				? 'disable-next-line'
-				: 'disable-line'
-		),
 		commentTemplate,
 	};
 };

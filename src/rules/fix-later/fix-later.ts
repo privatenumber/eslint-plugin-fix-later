@@ -6,7 +6,7 @@ import {
 	type GetInsertText,
 	type FixData,
 } from './utils/fixer.js';
-import { ruleId, ruleOptions } from './rule-meta.js';
+import { ruleId, ruleOptions, type InsertDisableComment } from './rule-meta.js';
 import { getVueElementNodeByRangeIndex } from './utils/vue.js';
 import { createCommentDescription, type GetCommentDescription } from './utils/comment-description.js';
 import { filterMessages } from './utils/filter-messages.js';
@@ -32,7 +32,7 @@ const getFixLaterMessages = (
 	sourceCode: SourceCode,
 	code: string,
 	messages: LintMessage[],
-	disableDirective: InlineDirectives,
+	disableDirective: InsertDisableComment,
 	ruleSeverity: Linter.Severity,
 	getCommentDescription: GetCommentDescription,
 ) => {
@@ -73,12 +73,21 @@ const getFixLaterMessages = (
 				line: message.line,
 				column: 0,
 			});
-			const fix = (
-				disableDirective === 'disable-next-line'
-					? insertCommentAboveLine(code, lineStart)
-					: insertCommentSameLine(code, lineStart)
-			);
-			insertFix(message, commentSyntax.jsInline, disableDirective, fix);
+			if (disableDirective === 'above-line') {
+				insertFix(
+					message,
+					commentSyntax.jsInline,
+					'disable-next-line',
+					insertCommentAboveLine(code, lineStart),
+				)
+			} else {
+				insertFix(
+					message,
+					commentSyntax.jsInline,
+					'disable-line',
+					insertCommentSameLine(code, lineStart),
+				);
+			}
 			continue;
 		}
 
@@ -188,7 +197,7 @@ const suppressFileErrors = (
 		sourceCode,
 		code,
 		processMessages,
-		ruleOptions.disableDirective,
+		ruleOptions.insertDisableComment,
 		ruleSeverity,
 		createCommentDescription(ruleOptions.commentTemplate, filename),
 	));
