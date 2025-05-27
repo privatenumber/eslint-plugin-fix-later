@@ -359,6 +359,137 @@ export default testSuite(({ describe }, eslintPath: string) => {
 			});
 		});
 
+		test('jsx expression', async () => {
+			const content = outdent`
+			(
+				<>
+					{ true ? <div>Hello World</div> : null }
+				</>
+			);
+			(
+				<>{ true ? <div>Hello World</div> : null }</>
+			);
+
+			(<>
+				<div
+					a={true ? <div>Hello World</div> : null}
+				/>
+			</>);
+
+			(<div
+				a={true ? <div>Hello World</div> : null}
+			/>);
+
+			(<div
+				a={
+					true ? <div>Hello World</div> : null
+				}
+			/>);
+
+			(<div
+				a={
+					true ? <div>Hello World</div> : null}
+			/>);
+			`;
+
+			const result = await eslintWithCode(eslintPath, {
+				config: {
+					rules: {
+						'no-ternary': 'error',
+						'fix-later/fix-later': ['error'],
+					},
+				},
+				code: {
+					name: 'FileA.js',
+					content,
+				},
+				fix: true,
+			});
+
+			console.log({
+				messages: result.messages,
+				output: result.output,
+			});
+						
+			expect(result.errorCount).toBe(0);
+			expect(result.output).toBe(
+				outdent`
+				(
+					<>
+						{/* eslint-disable no-ternary -- Fix later */ true ? <div>Hello World</div> : null /* eslint-enable no-ternary */}
+					</>
+				);
+				(
+					<>{/* eslint-disable no-ternary -- Fix later */ true ? <div>Hello World</div> : null /* eslint-enable no-ternary */}</>
+				);
+
+				(<>
+					<div
+						a={/* eslint-disable no-ternary -- Fix later */true ? <div>Hello World</div> : null/* eslint-enable no-ternary */}
+					/>
+				</>);
+
+				(<div
+					a={/* eslint-disable no-ternary -- Fix later */true ? <div>Hello World</div> : null/* eslint-enable no-ternary */}
+				/>);
+
+				(<div
+					a={
+						/* eslint-disable no-ternary -- Fix later */
+						true ? <div>Hello World</div> : null
+					/* eslint-enable no-ternary */
+					}
+				/>);
+
+				(<div
+					a={
+						/* eslint-disable no-ternary -- Fix later */
+						true ? <div>Hello World</div> : null/* eslint-enable no-ternary */
+				}
+				/>);
+				`,
+			);
+		});
+
+		// test('jsx element', async () => {
+		// 	const content = outdent`
+		// 	(
+		// 		<div>
+		// 			Here is a
+		// 			<a>link</a>
+		// 		</div>
+		// 	);
+		// 	`;
+
+		// 	const result = await eslintWithCode(eslintPath, {
+		// 		config: {
+		// 			plugins: ['@stylistic/jsx'],
+		// 			rules: {
+		// 				'@stylistic/jsx/jsx-child-element-spacing': 'error',
+		// 				'fix-later/fix-later': ['error'],
+		// 			},
+		// 		},
+		// 		code: {
+		// 			name: 'FileA.js',
+		// 			content,
+		// 		},
+		// 		fix: true,
+		// 	});
+
+		// 	// expect(result.errorCount).toBe(0);
+		// 	expect(result.output).toBe(
+		// 		outdent`
+		// 		(
+		// 			<div>
+		// 				Here is a
+		// 				{ /* eslint-disable-next-line */ }
+		// 				<a>link</a>
+		// 			</div>
+		// 		);
+		// 		`,
+		// 	);
+		// });
+
 		test('vue', async () => {
 			const result = await eslintWithCode(eslintPath, {
 				config: {

@@ -43,6 +43,7 @@ const suppressFileErrors = (
 		processMessages,
 		ruleOptions.insertDisableComment,
 		ruleSeverity,
+		extractedConfig.parserOptions?.ecmaFeatures?.jsx,
 		createCommentDescription(ruleOptions.commentTemplate, filename),
 	));
 

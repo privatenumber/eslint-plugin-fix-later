@@ -41,12 +41,32 @@ type FixMap = {
 	syntax: CommentSyntax;
 } & { [directive in Directives]?: Fixer; };
 
+type Node<T> = {
+	type: string;
+	parent?: T;
+};
+
+const findNodeParent = <T extends Node<T>>(
+	node: T,
+	parentTypes: string[],
+): T | false => {
+	let current: T | undefined = node;
+	while (current) {
+		if (parentTypes.includes(current.type)) {
+			return current;
+		}
+		current = current.parent;
+	}
+	return false;
+};
+
 export const getFixLaterMessages = (
 	sourceCode: SourceCode,
 	code: string,
 	errorMessages: LintMessage[],
 	disableDirective: InsertDisableComment,
 	ruleSeverity: Linter.Severity,
+	jsxEnabled: boolean | undefined,
 	getCommentDescription: GetCommentDescription,
 ) => {
 	const fixesMap = new Map<number, FixMap>();
@@ -79,9 +99,96 @@ export const getFixLaterMessages = (
 			line: message.line,
 			column: message.column - 1,
 		});
-		const node = sourceCode.getNodeByRangeIndex(index);
 
+		const node = sourceCode.getNodeByRangeIndex(index);
 		if (node) {
+			if (jsxEnabled) {
+				const jsxExpression = findNodeParent(node, ['JSXExpressionContainer']);
+				if (jsxExpression) {
+					const isMultiline = node.loc!.start.line !== jsxExpression.loc!.start.line;
+
+					if (isMultiline) {
+						const disableLine = sourceCode.getIndexFromLoc({
+							line: node.loc!.start.line,
+							column: 0,
+						});
+						const disableFix = insertCommentAboveLine(code, disableLine);
+						disableFix.insertAt = Math.max(
+							disableFix.insertAt,
+							jsxExpression.range![0] + 1,
+						);
+						insertFix(message, commentSyntax.jsBlock, 'disable', disableFix);
+
+						const enableLine = sourceCode.getIndexFromLoc({
+							line: node.loc!.end.line + 1,
+							column: 0,
+						});
+						const enableFix = insertCommentAboveLine(code, enableLine);
+						enableFix.insertAt = Math.min(
+							enableFix.insertAt,
+							jsxExpression.range![1] - 1,
+						);
+						insertFix(message, commentSyntax.jsBlock, 'enable', enableFix);
+
+						continue;
+					} else {
+						const [start, end] = jsxExpression.range!;
+						insertFix(
+							message,
+							commentSyntax.jsBlock,
+							'disable',
+							{
+								insertAt: start + 1,
+								getInsertText: comment => comment,
+							},
+						);
+						insertFix(
+							message,
+							commentSyntax.jsBlock,
+							'enable',
+							{
+								insertAt: end - 1,
+								getInsertText: comment => comment,
+							},
+						);
+						continue;
+					}
+
+				}
+
+				// type JSXElement = {
+				// 	type: string;
+				// 	openingElement: {
+				// 		start: number;
+				// 	};
+				// 	closingElement: {
+				// 		end: number;
+				// 	};
+				// };
+				// const inJsx = findNodeParent(node as JSXElement, ['JSXElement', 'JSXFragment']);
+				// if (inJsx) {
+				// 	insertFix(
+				// 		message,
+				// 		commentSyntax.jsx,
+				// 		'disable',
+				// 		{
+				// 			insertAt: inJsx.openingElement.start,
+				// 			getInsertText: comment => comment,
+				// 		},
+				// 	);
+				// 	insertFix(
+				// 		message,
+				// 		commentSyntax.jsx,
+				// 		'enable',
+				// 		{
+				// 			insertAt: inJsx.closingElement.end,
+				// 			getInsertText: comment => comment,
+				// 		},
+				// 	);
+				// 	continue;
+				// }
+			}
+
 			const lineStart = sourceCode.getIndexFromLoc({
 				line: message.line,
 				column: 0,
