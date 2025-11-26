@@ -164,14 +164,18 @@ export const getFixLaterMessages = (
 						end: number;
 					};
 				};
-				const inJsx = findNodeParent(node as JSXElement, ['JSXElement', 'JSXFragment']);
+				const inJsx = findNodeParent(node as JSXElement, ['JSXElement', 'JSXFragment', 'JSXOpeningElement']);
 				if (inJsx) {
+					console.log(message);
+					
+					// console.log(node);
+					
 					insertFix(
 						message,
 						commentSyntax.jsx,
 						'disable',
 						{
-							insertAt: inJsx.openingElement.start,
+							insertAt: inJsx.start,
 							getInsertText: comment => comment,
 						},
 					);
@@ -180,7 +184,7 @@ export const getFixLaterMessages = (
 						commentSyntax.jsx,
 						'enable',
 						{
-							insertAt: inJsx.closingElement.end,
+							insertAt: inJsx.end,
 							getInsertText: comment => comment,
 						},
 					);

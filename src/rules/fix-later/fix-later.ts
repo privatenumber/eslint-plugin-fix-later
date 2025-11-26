@@ -17,6 +17,8 @@ const suppressFileErrors = (
 		fix?: Fix;
 	},
 ) => {
+	// console.dir(messages, { depth: 3, maxArrayLength: null });
+	
 	if (!ruleId || !ruleOptions) {
 		return messages;
 	}
