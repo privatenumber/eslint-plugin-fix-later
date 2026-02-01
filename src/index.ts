@@ -1,8 +1,22 @@
-import type { ESLint } from 'eslint';
+import type { ESLint, Linter } from 'eslint';
 import { rules } from './rules/index.js';
 
-const plugin = {
-	rules,
-} satisfies ESLint.Plugin;
+const plugin: ESLint.Plugin = { rules };
 
-export default plugin;
+const recommended = {
+	plugins: {
+		'fix-later': plugin,
+	},
+	rules: {
+		'fix-later/fix-later': ['warn', {
+			insertDisableComment: 'above-line',
+			commentTemplate: 'Fix later',
+		}],
+	},
+} satisfies Linter.FlatConfig;
+
+export default Object.assign(plugin, {
+	configs: {
+		recommended,
+	},
+});
